@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLS Helper - Automático</title>
+    
+    <!-- PWA manifest -->
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiQkxTIEhlbHBlciIsInNob3J0X25hbWUiOiJCTFMiLCJzdGFydF91cmwiOiIvIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzRDQUY1MCIsInRoZW1lX2NvbG9yIjoiIzRDQUY1MCIsImljb25zIjpbeyJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJaeUIzYVdSMGFEMGlNVGsySWlCb1pXbG5hSFE5SWpFNU5pSWlQZ29nSUNBOGNtVmpkQ0IzYVdSMGFEMGlNVGsySWlCb1pXbG5hSFE5SWpFNU5pSWdabWxzYkQwaVl6WmhNelk0TXpCMklpOCtDaUFnSUNOQklCRkVVQVFLWEJHVWlXbGZma3BzUER4cGMzd0VQRDVWWnlBOElBPT0iLCJzaXplcyI6IjE5MngxOTIiLCJ0eXBlIjoiaW1hZ2Uvc3ZnK3htbCJ9XX0=">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 450px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #4CAF50, #2196F3, #FF9800);
+        }
+
+        .header {
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        .magic-button {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 1.5rem 2rem;
+            font-size: 1.3rem;
+            border-radius: 60px;
+            cursor: pointer;
+            margin: 1.5rem 0;
+            font-weight: 700;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .magic-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(76, 175, 80, 0.4);
+        }
+
+        .magic-button:active {
+            transform: translateY(-1px);
+        }
+
+        .magic-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .magic-button:hover::before {
+            left: 100%;
+        }
+
+        .status {
+            margin: 1.5rem 0;
+            padding: 1rem;
+            border-radius: 12px;
+            font-weight: 500;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .status.success {
+            background: linear-gradient(135deg, #e8f5e8, #f1f8e9);
+            color: #2e7d32;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .status.error {
+            background: linear-gradient(135deg, #ffebee, #fce4ec);
+            color: #c62828;
+            border-left: 4px solid #f44336;
+        }
+
+        .status.info {
+            background: linear-gradient(135deg, #e3f2fd, #e8f4fd);
+            color: #1565c0;
+            border-left: 4px solid #2196F3;
+        }
+
+        .status.warning {
+            background: linear-gradient(135deg, #fff3e0, #fef7e0);
+            color: #f57c00;
+            border-left: 4px solid #ff9800;
+        }
+
+        .process-steps {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin: 1.5rem 0;
+            text-align: left;
+            display: none;
+        }
+
+        .process-steps h3 {
+            color: #333;
+            margin-bottom: 1rem;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            margin: 0.8rem 0;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .step:hover {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .step-number {
+            background: #4CAF50;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        .step-text {
+            flex: 1;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .bls-link {
+            background: linear-gradient(135deg, #2196F3, #1976d2);
+            color: white;
+            text-decoration: none;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            display: inline-block;
+            margin: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.3);
+        }
+
+        .bls-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(33, 150, 243, 0.4);
+            text-decoration: none;
+            color: white;
+        }
+
+        .footer {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 2rem;
+                margin: 10px;
+            }
+            .header h1 {
+                font-size: 1.7rem;
+            }
+            .magic-button {
+                padding: 1.2rem 1.5rem;
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 BLS Helper</h1>
+            <p>Automatización inteligente para trámites de visa</p>
+        </div>
+
+        <button class="magic-button" id="magicButton" onclick="startMagicProcess()">
+            ✨ Iniciar Proceso Automático
+        </button>
+
+        <div id="status" class="status"></div>
+
+        <div id="processSteps" class="process-steps">
+            <h3>🔄 Proceso Automático</h3>
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-text">Detectar página de BLS España</div>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-text">Capturar datos de tu sesión</div>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-text">Generar enlace para cliente</div>
+            </div>
+            <div class="step">
+                <div class="step-number">4</div>
+                <div class="step-text">Monitoreo automático de completación</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>🔒 Proceso seguro y automático</p>
+            <p>Sin copiar código ni usar consola</p>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <script>
+        // 🔥 CONFIGURACIÓN FIREBASE - REEMPLAZA CON TUS DATOS
+        const firebaseConfig = {
+            apiKey: "AIzaSyDlvnE4GWBIN77eRCiJKCMNcsE9BwU6SV8",
+            authDomain: "bls-helper-69ca8.firebaseapp.com",
+            databaseURL: "https://bls-helper-69ca8-default-rtdb.firebaseio.com",
+            projectId: "bls-helper-69ca8",
+            storageBucket: "bls-helper-69ca8.firebasestorage.app",
+            messagingSenderId: "389897130196",
+            appId: "1:389897130196:web:50c2d87501395248a96b41"
+        };
+
+        const CLIENT_PAGE_URL = "https://tu-usuario.github.io/bls-client/client.html";
+
+        let db;
+        let isProcessing = false;
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.database();
+
+        function showStatus(message, type, duration = 5000) {
+            const status = document.getElementById('status');
+            status.innerHTML = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+
+            if (duration > 0) {
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, duration);
+            }
+        }
+
+        function updateButton(text, loading = false) {
+            const button = document.getElementById('magicButton');
+            if (loading) {
+                button.innerHTML = `<span class="loading"></span>${text}`;
+                button.disabled = true;
+            } else {
+                button.innerHTML = text;
+                button.disabled = false;
+            }
+        }
+
+        async function startMagicProcess() {
+            if (isProcessing) return;
+            isProcessing = true;
+
+            try {
+                updateButton('Iniciando proceso mágico...', true);
+                document.getElementById('processSteps').style.display = 'block';
+                
+                showStatus('🔍 Buscando pestañas de BLS España...', 'info', 0);
+
+                // Paso 1: Detectar BLS
+                const blsDetected = await detectBLSPage();
+                if (!blsDetected) {
+                    throw new Error('No se detectó BLS España. Asegúrate de tener BLS abierto en otra pestaña.');
+                }
+
+                showStatus('✅ BLS detectado! Capturando datos de sesión...', 'success', 3000);
+                await sleep(1000);
+
+                // Paso 2: Obtener datos del cliente
+                const clientData = getClientData();
+                if (!clientData) {
+                    throw new Error('Datos del cliente cancelados');
+                }
+
+                showStatus('📋 Datos del cliente obtenidos. Generando enlace...', 'info', 3000);
+                await sleep(1000);
+
+                // Paso 3: Generar enlace
+                const link = await generateClientLink(clientData);
+                
+                showStatus('🔗 Enlace generado exitosamente!', 'success', 0);
+                
+                // Paso 4: Mostrar opciones de envío
+                showLinkOptions(link, clientData);
+
+            } catch (error) {
+                console.error('Error en proceso:', error);
+                showStatus(`❌ Error: ${error.message}`, 'error', 0);
+            } finally {
+                updateButton('✨ Iniciar Proceso Automático');
+                isProcessing = false;
+            }
+        }
+
+        async function detectBLSPage() {
+            // Simular detección de BLS
+            // En una implementación real, esto usaría postMessage o comunicación entre pestañas
+            
+            showStatus('🔍 Verificando si tienes BLS abierto...', 'info', 0);
+            await sleep(2000);
+
+            // Simular confirmación del usuario
+            const hasBLS = confirm(`🎯 DETECCIÓN AUTOMÁTICA
+
+¿Tienes BLS España abierto en otra pestaña en el paso de Liveness Detection?
+
+✅ SÍ - Continuar automáticamente
+❌ NO - Te llevaré a BLS primero`);
+
+            if (!hasBLS) {
+                // Abrir BLS y guiar al usuario
+                const openBLS = confirm('Te voy a abrir BLS España. Ve al paso de Liveness Detection y vuelve aquí.');
+                if (openBLS) {
+                    window.open('https://ecuador.blsspainglobal.com', '_blank');
+                }
+                return false;
+            }
+
+            return true;
+        }
+
+        function getClientData() {
+            const clientName = prompt('👤 Nombre completo del cliente:', '');
+            if (!clientName || clientName.trim().length < 2) {
+                alert('❌ El nombre del cliente es obligatorio');
+                return null;
+            }
+
+            const clientPhone = prompt('📱 WhatsApp del cliente (con código país):', '+593 ');
+            if (!clientPhone || clientPhone.trim().length < 8) {
+                alert('❌ El número de WhatsApp es obligatorio');
+                return null;
+            }
+
+            return {
+                name: clientName.trim(),
+                phone: clientPhone.trim()
+            };
+        }
+
+        async function generateClientLink(clientData) {
+            const sessionId = 'bls_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+            
+            // Simular captura de datos de sesión
+            const sessionData = {
+                sessionId,
+                clientName: clientData.name,
+                clientPhone: clientData.phone,
+                status: 'waiting',
+                createdAt: new Date().toISOString(),
+                expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+                // En implementación real, aquí se capturarían los datos reales de BLS
+                mockData: {
+                    url: 'https://ecuador.blsspainglobal.com/Global/appointment/newappointment',
+                    cookies: 'simulatedCookies=abc123; sessionId=xyz789',
+                    formData: 'simulatedFormData'
+                }
+            };
+
+            // Guardar en Firebase
+            await db.ref('sessions/' + sessionId).set(sessionData);
+
+            // Iniciar monitoreo
+            startAutomaticMonitoring(sessionId);
+
+            return CLIENT_PAGE_URL + '?session=' + sessionId;
+        }
+
+        function showLinkOptions(link, clientData) {
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.8);
+                z-index: 999999;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                padding: 20px;
+                font-family: inherit;
+            `;
+
+            modal.innerHTML = `
+                <div style="background: white; padding: 2.5rem; border-radius: 20px; max-width: 90%; max-height: 90%; overflow-y: auto; text-align: center;">
+                    <h2 style="color: #4CAF50; margin-bottom: 1rem; font-size: 1.8rem;">🎉 ¡Enlace Generado!</h2>
+                    
+                    <div style="background: linear-gradient(135deg, #f0f0f0, #f8f8f8); padding: 1.5rem; border-radius: 12px; margin: 1.5rem 0; word-break: break-all; font-family: monospace; font-size: 0.9rem; border-left: 4px solid #4CAF50;">
+                        ${link}
+                    </div>
+                    
+                    <div style="margin: 1.5rem 0; padding: 1rem; background: #f8f9fa; border-radius: 10px;">
+                        <p><strong>👤 Cliente:</strong> ${clientData.name}</p>
+                        <p><strong>📱 WhatsApp:</strong> ${clientData.phone}</p>
+                        <p><strong>⏰ Válido por:</strong> 30 minutos</p>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 2rem 0;">
+                        <button onclick="copyLinkToClipboard('${link}')" style="background: linear-gradient(135deg, #2196F3, #1976d2); color: white; border: none; padding: 1rem; border-radius: 12px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: transform 0.2s;">
+                            📋 Copiar Enlace
+                        </button>
+                        <button onclick="sendWhatsAppMessage('${clientData.phone}', '${link}', '${clientData.name}')" style="background: linear-gradient(135deg, #25D366, #20ba5a); color: white; border: none; padding: 1rem; border-radius: 12px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: transform 0.2s;">
+                            📱 Enviar WhatsApp
+                        </button>
+                    </div>
+                    
+                    <div style="background: linear-gradient(135deg, #e8f5e8, #f1f8e9); padding: 1.5rem; border-radius: 12px; margin: 1.5rem 0; color: #2e7d32; border-left: 4px solid #4CAF50;">
+                        <strong>🤖 Monitoreo Automático Activado</strong><br>
+                        • Te notificaremos cuando el cliente complete<br>
+                        • No necesitas hacer nada más<br>
+                        • Mantén esta página abierta
+                    </div>
+                    
+                    <button onclick="closeModal()" style="background: #666; color: white; border: none; padding: 1rem 2rem; border-radius: 25px; cursor: pointer; font-size: 1rem; margin-top: 1rem;">
+                        Cerrar y Monitorear
+                    </button>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Funciones globales para el modal
+            window.copyLinkToClipboard = function(link) {
+                navigator.clipboard.writeText(link).then(() => {
+                    showStatus('📋 ¡Enlace copiado al portapapeles!', 'success', 3000);
+                }).catch(() => {
+                    prompt('Copia este enlace:', link);
+                });
+            };
+
+            window.sendWhatsAppMessage = function(phone, link, name) {
+                const message = `Hola ${name}! 👋
+
+Para completar tu trámite de visa España, abre este enlace y sigue las instrucciones:
+
+🔗 ${link}
+
+⏰ Válido por 30 minutos.
+
+¡Cualquier duda me escribes!`;
+
+                const cleanPhone = phone.replace(/\D/g, '');
+                const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+                
+                window.open(whatsappUrl, '_blank');
+                showStatus('📱 WhatsApp abierto - Envía el mensaje', 'success', 3000);
+            };
+
+            window.closeModal = function() {
+                document.body.removeChild(modal);
+                showStatus('👀 Monitoreo iniciado - Te avisaremos cuando el cliente termine', 'info', 5000);
+            };
+        }
+
+        function startAutomaticMonitoring(sessionId) {
+            console.log('🔄 Iniciando monitoreo automático para:', sessionId);
+            
+            const sessionRef = db.ref('sessions/' + sessionId);
+            
+            sessionRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                
+                if (data && data.status === 'completed') {
+                    sessionRef.off();
+                    
+                    showStatus('🎉 ¡Cliente completó la verificación! Redirigiendo a BLS...', 'success', 0);
+                    
+                    // Vibrar si está disponible
+                    if ('vibrate' in navigator) {
+                        navigator.vibrate([200, 100, 200, 100, 200]);
+                    }
+                    
+                    // Sonido de notificación
+                    playNotificationSound();
+                    
+                    setTimeout(() => {
+                        alert('🎉 ¡Cliente completó la verificación biométrica!\n\nAhora puedes continuar tu proceso en BLS.');
+                        // Abrir BLS o refrescar
+                        window.open('https://ecuador.blsspainglobal.com', '_blank');
+                    }, 2000);
+                }
+            });
+
+            // Auto-expirar después de 30 minutos
+            setTimeout(() => {
+                sessionRef.off();
+                showStatus('⏰ Monitoreo expirado. Si el cliente no terminó, genera un nuevo enlace.', 'warning', 0);
+            }, 30 * 60 * 1000);
+        }
+
+        function playNotificationSound() {
+            try {
+                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmMcBjiR1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmMcBjiR1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmMcBjiR1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmMcBjiR1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmMcBjiR1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmMcBjiR1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmMcBjiR1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmMcBjiR1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmM=');
+                audio.play().catch(() => {
+                    // Ignorar si no se puede reproducir
+                });
+            } catch (e) {
+                // Ignorar errores de audio
+            }
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Registrar service worker para PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('data:application/javascript;base64,c2VsZi5hZGRFdmVudExpc3RlbmVyKCdpbnN0YWxsJywgZnVuY3Rpb24oZXZlbnQpIHsgZXZlbnQud2FpdFVudGlsKHNlbGYuc2tpcFdhaXRpbmcoKSk7IH0pOw==')
+                .catch(() => {
+                    // Ignorar errores de SW
+                });
+        }
+
+        console.log('🎯 BLS Helper Mágico cargado correctamente');
+    </script>
+</body>
+</html>

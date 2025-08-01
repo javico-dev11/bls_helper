@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLS Helper Cliente</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlBXQSBDbGllbnRlIC0gVmVyaWZpY2FjacOzbiBkZSBWaWRlbyIsCiAgInNob3J0X25hbWUiOiAiQ2xpZW50ZSBQV0EiLAogICJzdGFydF91cmwiOiAiLi8iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwMDAwMDAiLAogICJ0aGVtZV9jb2xvciI6ICIjMTU5OTU3IiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sO2Jhc2U2NCxQSE4yWnlCNGJXeHVjejBpYUhSMGNEb3ZMM2QzZHk1M015NXZjbWN2TWpBd01DOXpkbWNpSUhacFpYZENiM2c5SWpBZ01DQXpNakFnTXpJd0lqNEtJQ0E4Y21WamRDQjRQU0kwTUNJZ2VUMGlOREFpSUhkcFpIUm9QU0l5TkRBaUlHaGxhV2RvZEQwaU1qUXdJaUJtYVd4c1BTSWpNVFU1T1RVM0lqOCtDaUFnUEhSbGVIUWdlRDBpTVRZd0lpQjVQU0k1TUNJZ2RHVjRkQzFoYm1Ob2IzSTlTVzFwWkdSc1pTSWdabWxzYkQwaUl6Wm1Nekk1WmlJZ1ptOXVkQzF6YVhwbFBTSXlNQ0krUTJ4cFpXNTBaVHd2ZEdWNGRENEtQQzl6ZG1jKyIsICAgICAgInNpemVzIjogIjMyMHgzMjAiLAogICAgICAidHlwZSI6ICJpbWFnZS9zdmcreG1sIgogICAgfQogIF0KfQ==">
+    <meta name="theme-color" content="#159957">
+    
+    <!-- TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
+
+    <script src="/firebase-config.js"></script>
+    
+    <style>
+        .hidden { display: none !important; }
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #159957;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .video-preview {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .record-button {
+            transition: all 0.3s ease;
+        }
+        .record-button.recording {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="fixed inset-0 bg-green-600 flex items-center justify-center z-50">
+        <div class="text-center text-white">
+            <div class="loading-spinner mx-auto mb-4 border-white border-t-transparent"></div>
+            <h2 class="text-2xl font-bold mb-2">BLS Helper Cliente</h2>
+            <p>Inicializando aplicación...</p>
+        </div>
+    </div>
+
+    <!-- Error Screen -->
+    <div id="errorScreen" class="hidden fixed inset-0 bg-red-600 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full text-center">
+            <div class="text-red-600 mb-4">
+                <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 19.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+            </div>
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Sesión No Válida</h2>
+            <p id="errorMessage" class="text-gray-600 mb-6">
+                El enlace no es válido o ha expirado. Por favor contacte a su asesor.
+            </p>
+            <button onclick="window.close()" class="bg-red-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-red-700">
+                Cerrar
+            </button>
+        </div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="hidden fixed inset-0 bg-gray-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Verificación de Video</h1>
+                <p class="text-gray-600">Ingrese sus credenciales para continuar</p>
+            </div>
+            
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <input type="email" id="email" required 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                           placeholder="su@email.com">
+                </div>
+                
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
+                    <input type="password" id="password" required 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                           placeholder="••••••••">
+                </div>
+                
+                <button type="submit" id="loginBtn" 
+                        class="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                    <span id="loginBtnText">Iniciar Sesión</span>
+                    <div id="loginBtnSpinner" class="loading-spinner mx-auto hidden"></div>
+                </button>
+            </form>
+            
+            <div id="loginError" class="hidden mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"></div>
+            
+            <div class="mt-6 text-center text-sm text-gray-500">
+                <p>🔒 Sesión segura para: <span id="sessionFor" class="font-medium"></span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Video Recording App -->
+    <div id="mainApp" class="hidden">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="px-4 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">Verificación de Video</h1>
+                        <p class="text-sm text-gray-600">Bienvenido/a <span id="userName" class="font-medium"></span></p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xs text-gray-500">Sesión segura</div>
+                        <div class="text-sm font-medium text-green-600">🔒 Encriptado</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Video Recording Section -->
+        <div class="p-4 max-w-2xl mx-auto">
+            <!-- Instructions -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+                <h2 class="text-lg font-semibold text-blue-900 mb-3">📹 Instrucciones para la Grabación</h2>
+                <div class="space-y-2 text-sm text-blue-800">
+                    <div class="flex items-start space-x-2">
+                        <span class="text-blue-600 font-bold">1.</span>
+                        <span>Asegúrese de estar en un lugar bien iluminado</span>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span class="text-blue-600 font-bold">2.</span>
+                        <span>Mantenga su rostro centrado en la cámara</span>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span class="text-blue-600 font-bold">3.</span>
+                        <span>Diga claramente su nombre completo</span>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span class="text-blue-600 font-bold">4.</span>
+                        <span>La grabación debe durar entre 10-30 segundos</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Camera Section -->
+            <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <div class="text-center">
+                    <div id="cameraContainer" class="relative mb-6">
+                        <video id="videoPreview" 
+                               class="video-preview w-full max-w-md mx-auto bg-gray-900 rounded-lg"
+                               autoplay 
+                               muted 
+                               playsinline>
+                        </video>
+                        
+                        <div id="cameraPlaceholder" class="w-full max-w-md mx-auto bg-gray-200 rounded-lg flex items-center justify-center h-64">
+                            <div class="text-center text-gray-500">
+                                <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                </svg>
+                                <p>Cámara no iniciada</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recording Controls -->
+                    <div id="recordingControls" class="space-y-4">
+                        <div id="recordingStatus" class="text-lg font-medium text-gray-900">
+                            Presione el botón para comenzar la grabación
+                        </div>
+                        
+                        <div id="recordingTimer" class="hidden text-2xl font-bold text-red-600">
+                            00:00
+                        </div>
+                        
+                        <div class="flex justify-center space-x-4">
+                            <button id="startCameraBtn" 
+                                    class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                                📹 Iniciar Cámara
+                            </button>
+                            
+                            <button id="startRecordBtn" 
+                                    class="hidden record-button bg-red-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-red-700 transition-colors">
+                                <span id="recordBtnText">🔴 Grabar Video</span>
+                            </button>
+                            
+                            <button id="stopRecordBtn" 
+                                    class="hidden bg-gray-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-700 transition-colors">
+                                ⏹️ Detener
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Video Review Section -->
+            <div id="reviewSection" class="hidden bg-white rounded-lg shadow-sm p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">🎬 Revisar Video Grabado</h3>
+                
+                <div class="text-center mb-4">
+                    <video id="recordedVideo" 
+                           class="video-preview w-full max-w-md mx-auto bg-gray-900 rounded-lg"
+                           controls>
+                    </video>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-6">
+                    <div>
+                        <span class="font-medium">Duración:</span>
+                        <span id="videoDuration">--</span>
+                    </div>
+                    <div>
+                        <span class="font-medium">Tamaño:</span>
+                        <span id="videoSize">--</span>
+                    </div>
+                </div>
+                
+                <div class="flex justify-center space-x-4">
+                    <button id="retryBtn" 
+                            class="bg-yellow-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-yellow-700 transition-colors">
+                        🔄 Grabar Nuevo
+                    </button>
+                    
+                    <button id="uploadBtn" 
+                            class="bg-green-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                        <span id="uploadBtnText">📤 Enviar Video</span>
+                        <div id="uploadSpinner" class="loading-spinner mx-auto hidden"></div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Upload Progress -->
+            <div id="uploadSection" class="hidden bg-white rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">📤 Enviando Video</h3>
+                
+                <div class="mb-4">
+                    <div class="flex justify-between text-sm text-gray-600 mb-2">
+                        <span>Progreso de subida</span>
+                        <span id="uploadProgress">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div id="uploadProgressBar" 
+                             class="bg-green-600 h-3 rounded-full transition-all duration-300" 
+                             style="width: 0%">
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="uploadStatus" class="text-center text-gray-600">
+                    Preparando archivo...
+                </div>
+            </div>
+
+            <!-- Success Section -->
+            <div id="successSection" class="hidden bg-white rounded-lg shadow-sm p-6 text-center">
+                <div class="text-green-600 mb-4">
+                    <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">✅ Video Enviado Correctamente</h3>
+                <p class="text-gray-600 mb-6">
+                    Su video ha sido enviado exitosamente al asesor. Recibirá una confirmación cuando sea procesado.
+                </p>
+                <div class="space-y-3">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-sm">
+                        <div class="font-medium text-green-900 mb-2">✅ Proceso Completado</div>
+                        <div class="text-green-800">
+                            <div>📅 Fecha: <span id="completionDate"></span></div>
+                            <div>🎥 Video ID: <span id="videoId"></span></div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="window.close()" 
+                            class="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                        🏠 Cerrar Ventana
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Permissions Modal -->
+    <div id="permissionsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg max-w-md w-full p-6">
+            <div class="text-center">
+                <div class="text-yellow-600 mb-4">
+                    <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 19.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-3">Permisos de Cámara Requeridos</h3>
+                <p class="text-gray-600 mb-6">
+                    Para grabar el video de verificación, necesitamos acceso a su cámara y micrófono.
+                </p>
+                <div class="space-y-3">
+                    <button id="grantPermissionsBtn" 
+                            class="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700">
+                        ✅ Permitir Acceso
+                    </button>
+                    <button id="cancelPermissionsBtn" 
+                            class="w-full bg-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-400">
+                        ❌ Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Browser Compatibility Warning -->
+    <div id="compatibilityWarning" class="hidden fixed bottom-4 right-4 bg-yellow-500 text-white p-4 rounded-lg shadow-lg max-w-sm z-40">
+        <div class="flex items-start space-x-3">
+            <svg class="w-6 h-6 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 19.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
+            <div class="flex-1">
+                <div class="font-medium mb-1">Navegador No Compatible</div>
+                <div class="text-sm">Use Chrome, Firefox o Safari para mejor experiencia</div>
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" class="text-white hover:text-gray-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+    <script>
+        // PWA Cliente - Script Principal
+        
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        // Global variables
+        let currentSession = null;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let stream = null;
+        let recordingTimerInterval = null;
+        let recordingStartTime = null;
+        let recordedBlob = null;
+
+        // DOM Elements
+        const loadingScreen = document.getElementById('loadingScreen');
+        const errorScreen = document.getElementById('errorScreen');
+        const loginScreen = document.getElementById('loginScreen');
+        const mainApp = document.getElementById('mainApp');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // Login elements
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const loginBtnText = document.getElementById('loginBtnText');
+        const loginBtnSpinner = document.getElementById('loginBtnSpinner');
+        const loginError = document.getElementById('loginError');
+        const sessionFor = document.getElementById('sessionFor');
+        const userName = document.getElementById('userName');
+
+        // Camera elements
+        const videoPreview = document.getElementById('videoPreview');
+        const cameraPlaceholder = document.getElementById('cameraPlaceholder');
+        const startCameraBtn = document.getElementById('startCameraBtn');
+        const startRecordBtn = document.getElementById('startRecordBtn');
+        const stopRecordBtn = document.getElementById('stopRecordBtn');
+        const recordingStatus = document.getElementById('recordingStatus');
+        const recordingTimer = document.getElementById('recordingTimer');
+        const recordBtnText = document.getElementById('recordBtnText');
+
+        // Review elements
+        const reviewSection = document.getElementById('reviewSection');
+        const recordedVideo = document.getElementById('recordedVideo');
+        const videoDuration = document.getElementById('videoDuration');
+        const videoSize = document.getElementById('videoSize');
+        const retryBtn = document.getElementById('retryBtn');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const uploadBtnText = document.getElementById('uploadBtnText');
+        const uploadSpinner = document.getElementById('uploadSpinner');
+
+        // Upload elements
+        const uploadSection = document.getElementById('uploadSection');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const uploadProgressBar = document.getElementById('uploadProgressBar');
+        const uploadStatus = document.getElementById('uploadStatus');
+
+        // Success elements
+        const successSection = document.getElementById('successSection');
+        const completionDate = document.getElementById('completionDate');
+        const videoId = document.getElementById('videoId');
+
+        // Permissions modal
+        const permissionsModal = document.getElementById('permissionsModal');
+        const grantPermissionsBtn = document.getElementById('grantPermissionsBtn');
+        const cancelPermissionsBtn = document.getElementById('cancelPermissionsBtn');
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        async function initializeApp() {
+            try {
+                // Check browser compatibility
+                checkBrowserCompatibility();
+                
+                // Get session ID from URL
+                const pathParts = window.location.pathname.split('/');
+                const sessionId = pathParts[pathParts.length - 1];
+                
+                if (!sessionId || sessionId === 'cliente') {
+                    showError('ID de sesión no válido en la URL');
+                    return;
+                }
+                
+                // Load session data
+                await loadSessionData(sessionId);
+                
+                // Setup event listeners
+                setupEventListeners();
+                
+                // Register service worker
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.register('/sw.js')
+                        .then(reg => console.log('SW registered:', reg))
+                        .catch(err => console.log('SW registration failed:', err));
+                }
+                
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                showError('Error al inicializar la aplicación');
+            }
+        }
+
+        function checkBrowserCompatibility() {
+            const isCompatible = navigator.mediaDevices && 
+                                navigator.mediaDevices.getUserMedia && 
+                                window.MediaRecorder;
+            
+            if (!isCompatible) {
+                const warning = document.getElementById('compatibilityWarning');
+                warning.classList.remove('hidden');
+            }
+        }
+
+        async function loadSessionData(sessionId) {
+            try {
+                // Search for session by sessionId field
+                const sessionsQuery = await db.collection('sessions')
+                    .where('sessionId', '==', sessionId)
+                    .limit(1)
+                    .get();
+                
+                if (sessionsQuery.empty) {
+                    showError('Sesión no encontrada. Verifique el enlace.');
+                    return;
+                }
+                
+                const sessionDoc = sessionsQuery.docs[0];
+                currentSession = { id: sessionDoc.id, ...sessionDoc.data() };
+                
+                // Check session status
+                if (currentSession.status === 'completada') {
+                    showError('Esta sesión ya ha sido completada.');
+                    return;
+                }
+                
+                if (currentSession.status === 'cancelada') {
+                    showError('Esta sesión ha sido cancelada.');
+                    return;
+                }
+                
+                // Show login screen
+                loadingScreen.style.display = 'none';
+                loginScreen.classList.remove('hidden');
+                sessionFor.textContent = currentSession.clienteNombre;
+                
+            } catch (error) {
+                console.error('Error loading session:', error);
+                showError('Error al cargar los datos de la sesión');
+            }
+        }
+
+        function setupEventListeners() {
+            // Login form
+            loginForm.addEventListener('submit', handleLogin);
+            
+            // Camera controls
+            startCameraBtn.addEventListener('click', startCamera);
+            startRecordBtn.addEventListener('click', startRecording);
+            stopRecordBtn.addEventListener('click', stopRecording);
+            
+            // Review controls
+            retryBtn.addEventListener('click', retryRecording);
+            uploadBtn.addEventListener('click', uploadVideo);
+            
+            // Permissions modal
+            grantPermissionsBtn.addEventListener('click', requestPermissions);
+            cancelPermissionsBtn.addEventListener('click', closePermissionsModal);
+            
+            // Window events
+            window.addEventListener('beforeunload', cleanupResources);
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                showLoginError('Por favor ingrese email y contraseña');
+                return;
+            }
+            
+            if (!currentSession) {
+                showLoginError('Sesión no válida');
+                return;
+            }
+            
+            setLoginLoading(true);
+            hideLoginError();
+            
+            try {
+                // Validate credentials against session data
+                if (email !== currentSession.clienteEmail || password !== currentSession.clientePassword) {
+                    throw new Error('Credenciales incorrectas');
+                }
+                
+                // Check if video already uploaded
+                if (currentSession.videoStatus === 'uploaded') {
+                    showError('Ya se ha subido un video para esta sesión.');
+                    return;
+                }
+                
+                // Login successful, show main app
+                loginScreen.classList.add('hidden');
+                mainApp.classList.remove('hidden');
+                userName.textContent = currentSession.clienteNombre;
+                
+                showMessage('Inicio de sesión exitoso', 'success');
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                showLoginError('Credenciales incorrectas. Verifique su email y contraseña.');
+                setLoginLoading(false);
+            }
+        }
+
+        async function startCamera() {
+            try {
+                // Check if permissions are needed
+                const permissionStatus = await navigator.permissions.query({name: 'camera'});
+                
+                if (permissionStatus.state === 'denied') {
+                    showPermissionsModal();
+                    return;
+                }
+                
+                // Request camera access
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: 'user'
+                    },
+                    audio: true
+                });
+                
+                // Show video preview
+                videoPreview.srcObject = stream;
+                videoPreview.classList.remove('hidden');
+                cameraPlaceholder.classList.add('hidden');
+                
+                // Show recording controls
+                startCameraBtn.classList.add('hidden');
+                startRecordBtn.classList.remove('hidden');
+                
+                recordingStatus.textContent = 'Cámara iniciada. Presione "Grabar Video" cuando esté listo.';
+                
+                showMessage('Cámara iniciada correctamente', 'success');
+                
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                
+                if (error.name === 'NotAllowedError') {
+                    showPermissionsModal();
+                } else if (error.name === 'NotFoundError') {
+                    showMessage('No se encontró cámara disponible', 'error');
+                } else {
+                    showMessage('Error al acceder a la cámara: ' + error.message, 'error');
+                }
+            }
+        }
+
+        async function requestPermissions() {
+            closePermissionsModal();
+            
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'user' },
+                    audio: true
+                });
+                
+                videoPreview.srcObject = stream;
+                videoPreview.classList.remove('hidden');
+                cameraPlaceholder.classList.add('hidden');
+                
+                startCameraBtn.classList.add('hidden');
+                startRecordBtn.classList.remove('hidden');
+                
+                recordingStatus.textContent = 'Cámara iniciada. Presione "Grabar Video" cuando esté listo.';
+                
+            } catch (error) {
+                showMessage('Permisos de cámara denegados', 'error');
+            }
+        }
+
+        function showPermissionsModal() {
+            permissionsModal.classList.remove('hidden');
+        }
+
+        function closePermissionsModal() {
+            permissionsModal.classList.add('hidden');
+        }
+
+        async function startRecording() {
+            if (!stream) {
+                showMessage('Primero debe iniciar la cámara', 'error');
+                return;
+            }
+            
+            try {
+                recordedChunks = [];
+                
+                // Create MediaRecorder
+                const options = {
+                    mimeType: 'video/webm;codecs=vp8,opus'
+                };
+                
+                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                    options.mimeType = 'video/webm';
+                }
+                
+                mediaRecorder = new MediaRecorder(stream, options);
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+                
+                mediaRecorder.onstop = handleRecordingStop;
+                
+                // Start recording
+                mediaRecorder.start();
+                recordingStartTime = Date.now();
+                
+                // Update UI
+                startRecordBtn.classList.add('hidden', 'recording');
+                stopRecordBtn.classList.remove('hidden');
+                recordingTimer.classList.remove('hidden');
+                
+                recordingStatus.textContent = 'Grabando... Diga su nombre completo claramente';
+                
+                // Start timer
+                startRecordingTimer();
+                
+                // Auto-stop after 30 seconds
+                setTimeout(() => {
+                    if (mediaRecorder && mediaRecorder.state === 'recording') {
+                        stopRecording();
+                    }
+                }, 30000);
+                
+            } catch (error) {
+                console.error('Error starting recording:', error);
+                showMessage('Error al iniciar grabación: ' + error.message, 'error');
+            }
+        }
+
+        function startRecordingTimer() {
+            recordingTimer.textContent = '00:00';
+            
+            recordingTimerInterval = setInterval(() => {
+                if (recordingStartTime) {
+                    const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+                    const minutes = Math.floor(elapsed / 60);
+                    const seconds = elapsed % 60;
+                    
+                    document.getElementById('recordingTimer').textContent = 
+                        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+            }
+            
+            // Clear timer
+            if (recordingTimerInterval) {
+                clearInterval(recordingTimerInterval);
+                recordingTimerInterval = null;
+            }
+            
+            // Update UI
+            startRecordBtn.classList.remove('hidden', 'recording');
+            stopRecordBtn.classList.add('hidden');
+            document.getElementById('recordingTimer').classList.add('hidden');
+            
+            recordingStatus.textContent = 'Procesando video grabado...';
+        }
+
+        function handleRecordingStop() {
+            try {
+                // Create blob from recorded chunks
+                recordedBlob = new Blob(recordedChunks, { type: 'video/webm' });
+                
+                // Calculate duration
+                const duration = recordingStartTime ? 
+                    Math.floor((Date.now() - recordingStartTime) / 1000) : 0;
+                
+                // Show review section
+                showVideoReview(recordedBlob, duration);
+                
+                recordingStatus.textContent = 'Video grabado correctamente. Revise el resultado.';
+                
+            } catch (error) {
+                console.error('Error processing recording:', error);
+                showMessage('Error al procesar video grabado', 'error');
+            }
+        }
+
+        function showVideoReview(blob, duration) {
+            // Create object URL for preview
+            const videoURL = URL.createObjectURL(blob);
+            recordedVideo.src = videoURL;
+            
+            // Update video info
+            videoDuration.textContent = `${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')}`;
+            videoSize.textContent = formatFileSize(blob.size);
+            
+            // Show review section
+            reviewSection.classList.remove('hidden');
+            
+            // Hide camera preview
+            videoPreview.classList.add('hidden');
+            document.getElementById('recordingControls').classList.add('hidden');
+        }
+
+        function retryRecording() {
+            // Reset UI
+            reviewSection.classList.add('hidden');
+            videoPreview.classList.remove('hidden');
+            document.getElementById('recordingControls').classList.remove('hidden');
+            
+            // Reset controls
+            startRecordBtn.classList.remove('hidden');
+            stopRecordBtn.classList.add('hidden');
+            
+            recordingStatus.textContent = 'Presione "Grabar Video" para intentar nuevamente.';
+            
+            // Clear recorded data
+            recordedBlob = null;
+            recordedChunks = [];
+            
+            // Revoke previous object URL
+            if (recordedVideo.src) {
+                URL.revokeObjectURL(recordedVideo.src);
+                recordedVideo.src = '';
+            }
+        }
+
+        async function uploadVideo() {
+            if (!recordedBlob || !currentSession) {
+                showMessage('No hay video para subir', 'error');
+                return;
+            }
+            
+            setUploadLoading(true);
+            
+            try {
+                // Show upload section
+                reviewSection.classList.add('hidden');
+                uploadSection.classList.remove('hidden');
+                
+                updateUploadStatus('Preparando archivo...', 0);
+                
+                // Create unique filename
+                const timestamp = Date.now();
+                const filename = `videos/${currentSession.sessionId}_${timestamp}.webm`;
+                
+                // Create storage reference
+                const storageRef = storage.ref().child(filename);
+                
+                // Upload task with progress monitoring
+                const uploadTask = storageRef.put(recordedBlob);
+                
+                uploadTask.on('state_changed', 
+                    (snapshot) => {
+                        // Progress monitoring
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        updateUploadStatus('Subiendo video...', Math.round(progress));
+                    },
+                    (error) => {
+                        // Error handling
+                        console.error('Upload error:', error);
+                        showMessage('Error al subir video: ' + error.message, 'error');
+                        setUploadLoading(false);
+                        uploadSection.classList.add('hidden');
+                        reviewSection.classList.remove('hidden');
+                    },
+                    async () => {
+                        // Upload completed
+                        try {
+                            updateUploadStatus('Finalizando...', 100);
+                            
+                            // Get download URL
+                            const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+                            
+                            // Calculate video metadata
+                            const duration = recordedVideo.duration || 0;
+                            const size = formatFileSize(recordedBlob.size);
+                            
+                            // Update session in Firestore
+                            await db.collection('sessions').doc(currentSession.id).update({
+                                videoUrl: downloadURL,
+                                videoStatus: 'uploaded',
+                                videoUploadedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                                videoDuration: `${Math.floor(duration / 60)}:${Math.floor(duration % 60).toString().padStart(2, '0')}`,
+                                videoSize: size,
+                                videoQuality: 'HD',
+                                videoFilename: filename,
+                                status: 'video_recibido',
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                            
+                            // Show success
+                            showSuccess(timestamp);
+                            
+                        } catch (error) {
+                            console.error('Error updating session:', error);
+                            showMessage('Error al finalizar proceso: ' + error.message, 'error');
+                        }
+                    }
+                );
+                
+            } catch (error) {
+                console.error('Error uploading video:', error);
+                showMessage('Error al subir video: ' + error.message, 'error');
+                setUploadLoading(false);
+                uploadSection.classList.add('hidden');
+                reviewSection.classList.remove('hidden');
+            }
+        }
+
+        function updateUploadStatus(message, progress) {
+            uploadStatus.textContent = message;
+            uploadProgress.textContent = `${progress}%`;
+            uploadProgressBar.style.width = `${progress}%`;
+        }
+
+        function showSuccess(timestamp) {
+            // Hide upload section
+            uploadSection.classList.add('hidden');
+            
+            // Show success section
+            successSection.classList.remove('hidden');
+            
+            // Update success info
+            completionDate.textContent = new Date().toLocaleString();
+            videoId.textContent = `VID_${timestamp}`;
+            
+            // Clean up resources
+            cleanupResources();
+            
+            showMessage('¡Video enviado exitosamente!', 'success');
+        }
+
+        function cleanupResources() {
+            // Stop camera stream
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            // Clear timer
+            if (recordingTimerInterval) {
+                clearInterval(recordingTimerInterval);
+                recordingTimerInterval = null;
+            }
+            
+            // Revoke object URLs
+            if (recordedVideo.src) {
+                URL.revokeObjectURL(recordedVideo.src);
+            }
+        }
+
+        // Utility functions
+        function showError(message) {
+            loadingScreen.style.display = 'none';
+            loginScreen.classList.add('hidden');
+            mainApp.classList.add('hidden');
+            errorScreen.classList.remove('hidden');
+            errorMessage.textContent = message;
+        }
+
+        function showLoginError(message) {
+            loginError.textContent = message;
+            loginError.classList.remove('hidden');
+            setTimeout(() => {
+                loginError.classList.add('hidden');
+            }, 5000);
+        }
+
+        function hideLoginError() {
+            loginError.classList.add('hidden');
+        }
+
+        function setLoginLoading(loading) {
+            if (loading) {
+                loginBtnText.style.display = 'none';
+                loginBtnSpinner.classList.remove('hidden');
+                loginBtn.disabled = true;
+            } else {
+                loginBtnText.style.display = 'inline';
+                loginBtnSpinner.classList.add('hidden');
+                loginBtn.disabled = false;
+            }
+        }
+
+        function setUploadLoading(loading) {
+            if (loading) {
+                uploadBtnText.style.display = 'none';
+                uploadSpinner.classList.remove('hidden');
+                uploadBtn.disabled = true;
+                retryBtn.disabled = true;
+            } else {
+                uploadBtnText.style.display = 'inline';
+                uploadSpinner.classList.add('hidden');
+                uploadBtn.disabled = false;
+                retryBtn.disabled = false;
+            }
+        }
+
+        function showMessage(message, type = 'info') {
+            const messageDiv = document.createElement('div');
+            
+            const colors = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                warning: 'bg-yellow-500',
+                info: 'bg-blue-500'
+            };
+            
+            messageDiv.className = `fixed top-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full`;
+            messageDiv.textContent = message;
+            
+            document.body.appendChild(messageDiv);
+            
+            // Animate in
+            setTimeout(() => {
+                messageDiv.classList.remove('translate-x-full');
+            }, 100);
+            
+            // Remove after 4 seconds
+            setTimeout(() => {
+                messageDiv.classList.add('translate-x-full');
+                setTimeout(() => {
+                    messageDiv.remove();
+                }, 300);
+            }, 4000);
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // PWA Install prompt for client
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Show install button for client app
+            const installBtn = document.createElement('button');
+            installBtn.textContent = '📱 Instalar App';
+            installBtn.className = 'fixed bottom-4 left-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-green-700 z-40 text-sm';
+            installBtn.onclick = async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const result = await deferredPrompt.userChoice;
+                    if (result.outcome === 'accepted') {
+                        installBtn.remove();
+                    }
+                    deferredPrompt = null;
+                }
+            };
+            
+            document.body.appendChild(installBtn);
+            
+            // Auto-remove after 10 seconds
+            setTimeout(() => {
+                if (installBtn.parentNode) {
+                    installBtn.remove();
+                }
+            }, 10000);
+        });
+
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                // Page hidden - pause recording if active
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    console.log('Page hidden, pausing recording...');
+                }
+            } else {
+                // Page visible again
+                console.log('Page visible again');
+            }
+        });
+
+        // Handle orientation changes
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                // Restart camera if needed after orientation change
+                if (stream && videoPreview.srcObject) {
+                    console.log('Orientation changed, adjusting camera...');
+                }
+            }, 500);
+        });
+
+        console.log('📱 PWA Cliente cargada correctamente');
+    </script>
+</body>
+</html>

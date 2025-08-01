@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLS Helper Asesor</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlBXQSBBc2Vzb3IgLSBHZXN0acOzbiBkZSBTZXNpb25lcyIsCiAgInNob3J0X25hbWUiOiAiQXNlc29yIFBXQSIsCiAgInN0YXJ0X3VybCI6ICIuLyIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzAwMDAwMCIsCiAgInRoZW1lX2NvbG9yIjogIiMyNTYzZWIiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJaeUI0Yld4dWN6MGlhSFIwY0RvdkwzZDNkeTUzTXk1dmNtY3ZNakF3TUM5emRtY2lJSFpwWlhkQ2IzZzlJakFnTUNBek1qQWdNekl3SWo0S0lDQThjbVZqZENCNFBTSTBNQ0lnZVQwaU5EQWlJSGRwWkhSb1BTSXlOREFpSUdobGFXZG9kRDBpTWpRd0lpQm1hV3hzUFNJak1qVTJNMlZpSWk4K0NpQWdQSFJsZUhRZ2VEMGlNVFl3SWlCNVBTSTVNQ0lnZEdWNGRDMWhibU5vYjNJOUltMXBaR1JzWlNJZ1ptbHNiRDBpSXpabU16TTVaaUlnWm05dWRDMXphWHBsUFNJeU1DSStRWE5sYzI5eVBDOTBaWGgwUGdvOEwzTjJaeUUrIiwKICAgICAgInNpemVzIjogIjMyMHgzMjAiLAogICAgICAidHlwZSI6ICJpbWFnZS9zdmcreG1sIgogICAgfQogIF0KfQ==">
+    <meta name="theme-color" content="#2563eb">
+    
+    <!-- TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+
+    <script src="/firebase-config.js"></script>
+    
+    <style>
+        .hidden { display: none !important; }
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #2563eb;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="fixed inset-0 bg-blue-600 flex items-center justify-center z-50">
+        <div class="text-center text-white">
+            <div class="loading-spinner mx-auto mb-4 border-white border-t-transparent"></div>
+            <h2 class="text-2xl font-bold mb-2">BLS Helper Asesor</h2>
+            <p>Inicializando aplicación...</p>
+        </div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="hidden fixed inset-0 bg-gray-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">PWA Asesor</h1>
+                <p class="text-gray-600">Gestión de Sesiones de Visa</p>
+            </div>
+            
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <input type="email" id="email" required 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="tu@email.com">
+                </div>
+                
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
+                    <input type="password" id="password" required 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="••••••••">
+                </div>
+                
+                <button type="submit" id="loginBtn" 
+                        class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                    <span id="loginBtnText">Iniciar Sesión</span>
+                    <div id="loginBtnSpinner" class="loading-spinner mx-auto hidden"></div>
+                </button>
+            </form>
+            
+            <div id="loginError" class="hidden mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"></div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="hidden">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="px-4 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">PWA Asesor</h1>
+                        <p class="text-sm text-gray-600" id="userEmail"></p>
+                    </div>
+                    <button id="logoutBtn" class="text-red-600 hover:text-red-700 font-medium">
+                        Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="bg-white border-b border-gray-200">
+            <div class="px-4">
+                <nav class="flex space-x-6">
+                    <button id="tabNuevaSesion" class="tab-btn py-3 px-1 border-b-2 border-blue-500 text-blue-600 font-medium">
+                        Nueva Sesión
+                    </button>
+                    <button id="tabMisSesiones" class="tab-btn py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                        Mis Sesiones
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Nueva Sesión Tab -->
+        <div id="nuevaSesionTab" class="p-4">
+            <!-- Cliente Info Form -->
+            <div id="clienteForm" class="bg-white rounded-lg shadow-sm p-6 mb-4">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Información del Cliente</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Cliente</label>
+                        <input type="text" id="clienteNombre" required 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                               placeholder="Juan Pérez">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email del Cliente</label>
+                        <input type="email" id="clienteEmail" required 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                               placeholder="cliente@email.com">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Contraseña del Cliente</label>
+                        <input type="password" id="clientePassword" required 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                               placeholder="••••••••">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono del Cliente</label>
+                        <input type="tel" id="clienteTelefono" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                               placeholder="+593 99 999 9999">
+                    </div>
+                </div>
+                
+                <button id="crearSesionBtn" 
+                        class="mt-4 bg-green-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                    <span id="crearSesionText">Crear Sesión y Generar Enlace</span>
+                    <div id="crearSesionSpinner" class="loading-spinner mx-auto hidden"></div>
+                </button>
+            </div>
+
+            <!-- Session Status and Link -->
+            <div id="sessionContainer" class="hidden bg-white rounded-lg shadow-sm p-6 mb-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Sesión Activa</h3>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                        <span class="text-green-800 font-medium">En espera</span>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-600">Cliente:</span>
+                            <span class="font-medium ml-2" id="sessionClientName"></span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Email:</span>
+                            <span class="font-medium ml-2" id="sessionClientEmail"></span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Teléfono:</span>
+                            <span class="font-medium ml-2" id="sessionClientPhone"></span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Email:</span>
+                            <span class="font-medium ml-2" id="sessionClientEmail"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Client Link Section -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <h4 class="font-semibold text-blue-900 mb-3">📱 Enlace para el Cliente</h4>
+                    <div class="flex space-x-2 mb-3">
+                        <input type="text" id="clientLinkInput" readonly 
+                               class="flex-1 px-3 py-2 bg-white border border-blue-300 rounded-lg text-sm">
+                        <button id="copyClientLinkBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+                            📋 Copiar
+                        </button>
+                        <button id="sendWhatsAppBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
+                            📱 WhatsApp
+                        </button>
+                        <button id="sendEmailBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700">
+                            📧 Email
+                        </button>
+                    </div>
+                    <div class="text-sm text-blue-700">
+                        <p>💡 <strong>Instrucciones para el cliente:</strong></p>
+                        <p>"Hola <span id="clientNameInstructions"></span>, por favor abra este enlace para grabar su video de verificación facial para el trámite de visa. Es un proceso rápido y seguro."</p>
+                        <div class="mt-2 p-2 bg-blue-100 rounded text-xs">
+                            <strong>URL generada:</strong> <span id="generatedUrl" class="font-mono"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Video Status Section -->
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <h4 class="font-semibold text-yellow-900 mb-3">🎥 Estado del Video</h4>
+                    <div id="videoStatusContainer">
+                        <div id="waitingVideo" class="flex items-center space-x-3">
+                            <div class="loading-spinner border-yellow-500 border-t-transparent"></div>
+                            <span class="text-yellow-800">Esperando que el cliente grabe el video...</span>
+                        </div>
+                        
+                        <div id="videoReceived" class="hidden">
+                            <div class="flex items-center space-x-3 mb-3">
+                                <div class="w-4 h-4 bg-green-500 rounded-full"></div>
+                                <span class="text-green-800 font-medium">Video recibido correctamente</span>
+                            </div>
+                            
+                            <div class="bg-white rounded-lg p-3 mb-3 text-sm">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <span class="text-gray-600">Fecha:</span>
+                                        <span class="font-medium ml-2" id="videoDate"></span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600">Duración:</span>
+                                        <span class="font-medium ml-2" id="videoDuration"></span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600">Tamaño:</span>
+                                        <span class="font-medium ml-2" id="videoSize"></span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600">Calidad:</span>
+                                        <span class="font-medium ml-2" id="videoQuality"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex space-x-2">
+                                <button id="playVideoBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+                                    ▶️ Reproducir Video
+                                </button>
+                                <button id="downloadVideoBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700">
+                                    📥 Descargar
+                                </button>
+                                <button id="approveVideoBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
+                                    ✅ Aprobar Video
+                                </button>
+                                <button id="rejectVideoBtn" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700">
+                                    ❌ Rechazar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Session Actions -->
+                <div class="mt-4 flex space-x-3">
+                    <button id="completarSesionBtn" class="hidden bg-green-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700">
+                        ✅ Completar Sesión
+                    </button>
+                    <button id="cancelarSesionBtn" class="bg-red-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-red-700">
+                        ❌ Cancelar Sesión
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mis Sesiones Tab -->
+        <div id="misSesionesTab" class="hidden p-4">
+            <div class="bg-white rounded-lg shadow-sm">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-gray-900">Historial de Sesiones</h2>
+                        <div class="flex space-x-2">
+                            <select id="filterStatus" class="px-3 py-1 border border-gray-300 rounded-lg text-sm">
+                                <option value="">Todos los estados</option>
+                                <option value="esperando">Esperando video</option>
+                                <option value="video_recibido">Video recibido</option>
+                                <option value="completada">Completada</option>
+                                <option value="cancelada">Cancelada</option>
+                            </select>
+                            <button id="refreshSessionsBtn" class="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-700">
+                                🔄 Actualizar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="sessionsList" class="divide-y divide-gray-200">
+                    <!-- Sessions will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Modal -->
+    <div id="videoModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg max-w-4xl w-full max-h-full overflow-hidden">
+            <div class="flex items-center justify-between p-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Video del Cliente</h3>
+                <button id="closeVideoModal" class="text-gray-500 hover:text-gray-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-4">
+                <video id="videoPlayer" controls class="w-full max-h-96">
+                    Tu navegador no soporta video HTML5.
+                </video>
+                <div class="mt-4 text-center text-sm text-gray-600">
+                    <p>Revise cuidadosamente el video para verificar la identidad del cliente</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div id="messageContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+    <script>
+        // PWA Asesor - Script Principal Corregido
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Global variables
+        let currentUser = null;
+        let currentSession = null;
+        let videoCheckInterval = null;
+
+        // Configuration - Cambiar por la URL real donde estará hospedada la PWA
+        const APP_CONFIG = {
+            // Cambiar por tu dominio real, ejemplo: 'https://mi-app-visa.com'
+            BASE_URL: 'https://mi-app-visa.com', // IMPORTANTE: Cambiar por tu URL real
+            CLIENT_PATH: '/cliente'
+        };
+
+        // DOM Elements
+        const loadingScreen = document.getElementById('loadingScreen');
+        const loginScreen = document.getElementById('loginScreen');
+        const mainApp = document.getElementById('mainApp');
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const loginBtnText = document.getElementById('loginBtnText');
+        const loginBtnSpinner = document.getElementById('loginBtnSpinner');
+        const loginError = document.getElementById('loginError');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const userEmail = document.getElementById('userEmail');
+
+        // Tab elements
+        const tabNuevaSesion = document.getElementById('tabNuevaSesion');
+        const tabMisSesiones = document.getElementById('tabMisSesiones');
+        const nuevaSesionTab = document.getElementById('nuevaSesionTab');
+        const misSesionesTab = document.getElementById('misSesionesTab');
+
+        // Nueva Sesión elements
+        const clienteForm = document.getElementById('clienteForm');
+        const crearSesionBtn = document.getElementById('crearSesionBtn');
+        const crearSesionText = document.getElementById('crearSesionText');
+        const crearSesionSpinner = document.getElementById('crearSesionSpinner');
+        const sessionContainer = document.getElementById('sessionContainer');
+
+        // Session elements
+        const sessionClientName = document.getElementById('sessionClientName');
+        const sessionClientEmail = document.getElementById('sessionClientEmail');
+        const sessionClientPhone = document.getElementById('sessionClientPhone');
+        const clientLinkInput = document.getElementById('clientLinkInput');
+        const clientNameInstructions = document.getElementById('clientNameInstructions');
+
+        // Video elements
+        const waitingVideo = document.getElementById('waitingVideo');
+        const videoReceived = document.getElementById('videoReceived');
+        const playVideoBtn = document.getElementById('playVideoBtn');
+        const downloadVideoBtn = document.getElementById('downloadVideoBtn');
+        const approveVideoBtn = document.getElementById('approveVideoBtn');
+        const rejectVideoBtn = document.getElementById('rejectVideoBtn');
+        const completarSesionBtn = document.getElementById('completarSesionBtn');
+        const cancelarSesionBtn = document.getElementById('cancelarSesionBtn');
+
+        // Video modal
+        const videoModal = document.getElementById('videoModal');
+        const videoPlayer = document.getElementById('videoPlayer');
+        const closeVideoModal = document.getElementById('closeVideoModal');
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        async function initializeApp() {
+            try {
+                // Check if app is properly configured
+                checkAppConfiguration();
+                
+                // Simulate loading
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                    
+                    // Check authentication state
+                    auth.onAuthStateChanged(async (user) => {
+                        if (user) {
+                            try {
+                                // Verificar que el usuario está realmente autenticado
+                                await user.getIdToken(true);
+                                currentUser = user;
+                                showMainApp();
+                            } catch (error) {
+                                console.error('Token verification failed:', error);
+                                await auth.signOut();
+                                showLoginScreen();
+                            }
+                        } else {
+                            currentUser = null;
+                            showLoginScreen();
+                        }
+                    });
+                }, 1000);
+                
+                // Setup event listeners
+                setupEventListeners();
+                
+                // Register service worker for PWA
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.register('/sw.js')
+                        .then(reg => console.log('SW registered:', reg))
+                        .catch(err => console.log('SW registration failed:', err));
+                }
+                
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                showMessage('Error inicializando la aplicación', 'error');
+            }
+        }
+
+        function checkAppConfiguration() {
+            // Check if BASE_URL is properly configured
+            if (APP_CONFIG.BASE_URL === 'https://mi-app-visa.com') {
+                console.warn('⚠️ ADVERTENCIA: Debes configurar APP_CONFIG.BASE_URL con tu dominio real');
+                
+                // For development, use current origin if localhost
+                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                    APP_CONFIG.BASE_URL = window.location.origin;
+                    console.log('🔧 Modo desarrollo: usando ' + APP_CONFIG.BASE_URL);
+                }
+            }
+        }
+
+        function setupEventListeners() {
+            // Login form
+            loginForm.addEventListener('submit', handleLogin);
+            logoutBtn.addEventListener('click', handleLogout);
+            
+            // Tabs
+            tabNuevaSesion.addEventListener('click', () => switchTab('nueva'));
+            tabMisSesiones.addEventListener('click', () => switchTab('sesiones'));
+            
+            // Nueva Sesión actions
+            crearSesionBtn.addEventListener('click', crearNuevaSesion);
+            
+            // Link sharing actions
+            document.getElementById('copyClientLinkBtn')?.addEventListener('click', copiarEnlaceCliente);
+            document.getElementById('sendWhatsAppBtn')?.addEventListener('click', enviarWhatsApp);
+            document.getElementById('sendEmailBtn')?.addEventListener('click', enviarEmail);
+            
+            // Video actions
+            playVideoBtn?.addEventListener('click', reproducirVideo);
+            downloadVideoBtn?.addEventListener('click', descargarVideo);
+            approveVideoBtn?.addEventListener('click', aprobarVideo);
+            rejectVideoBtn?.addEventListener('click', rechazarVideo);
+            
+            // Session actions
+            completarSesionBtn?.addEventListener('click', completarSesion);
+            cancelarSesionBtn?.addEventListener('click', cancelarSesion);
+            
+            // Video modal
+            closeVideoModal?.addEventListener('click', cerrarVideoModal);
+            
+            // Sessions list
+            document.getElementById('refreshSessionsBtn')?.addEventListener('click', cargarHistorialSesiones);
+            document.getElementById('filterStatus')?.addEventListener('change', filtrarSesiones);
+            
+            // Click outside modal to close
+            videoModal?.addEventListener('click', (e) => {
+                if (e.target === videoModal) {
+                    cerrarVideoModal();
+                }
+            });
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                showError('Por favor ingrese email y contraseña');
+                return;
+            }
+            
+            setLoginLoading(true);
+            hideError();
+            
+            try {
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                
+                // Verificar que el login fue exitoso
+                if (user) {
+                    currentUser = user;
+                    // No llamamos showMainApp aquí, lo deja manejar onAuthStateChanged
+                    showMessage('Inicio de sesión exitoso', 'success');
+                }
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                showError(getErrorMessage(error.code));
+                setLoginLoading(false);
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                // Clear intervals
+                if (videoCheckInterval) {
+                    clearInterval(videoCheckInterval);
+                    videoCheckInterval = null;
+                }
+                
+                // Reset current session
+                currentSession = null;
+                
+                // Close video modal if open
+                cerrarVideoModal();
+                
+                // Reset form
+                resetFormulario();
+                
+                // Hide main app immediately
+                mainApp.classList.add('hidden');
+                
+                // Sign out from Firebase
+                await auth.signOut();
+                
+                // Show login screen
+                showLoginScreen();
+                
+                showMessage('Sesión cerrada correctamente', 'info');
+                
+            } catch (error) {
+                console.error('Logout error:', error);
+                showMessage('Error al cerrar sesión', 'error');
+                // Force show login screen even if there's an error
+                showLoginScreen();
+            }
+        }
+
+        function showLoginScreen() {
+            loadingScreen.style.display = 'none';
+            mainApp.classList.add('hidden');
+            loginScreen.classList.remove('hidden');
+            
+            // Clear any form data
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
+            hideError();
+        }
+
+        function showMainApp() {
+            loginScreen.classList.add('hidden');
+            loadingScreen.style.display = 'none';
+            mainApp.classList.remove('hidden');
+            
+            if (currentUser && currentUser.email) {
+                userEmail.textContent = currentUser.email;
+            }
+            
+            // Load sessions
+            cargarHistorialSesiones();
+            
+            // Make sure we're on the correct tab
+            switchTab('nueva');
+        }
+
+        function switchTab(tab) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('border-blue-500', 'text-blue-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            // Hide all tabs
+            nuevaSesionTab.style.display = 'none';
+            misSesionesTab.style.display = 'none';
+            
+            if (tab === 'nueva') {
+                tabNuevaSesion.classList.add('border-blue-500', 'text-blue-600');
+                tabNuevaSesion.classList.remove('border-transparent', 'text-gray-500');
+                nuevaSesionTab.style.display = 'block';
+            } else {
+                tabMisSesiones.classList.add('border-blue-500', 'text-blue-600');
+                tabMisSesiones.classList.remove('border-transparent', 'text-gray-500');
+                misSesionesTab.style.display = 'block';
+                cargarHistorialSesiones();
+            }
+        }
+
+        async function crearNuevaSesion() {
+            const clienteNombre = document.getElementById('clienteNombre').value;
+            const clienteEmail = document.getElementById('clienteEmail').value;
+            const clientePassword = document.getElementById('clientePassword').value;
+            const clienteTelefono = document.getElementById('clienteTelefono').value;
+            
+            if (!clienteNombre || !clienteEmail || !clientePassword) {
+                showMessage('Por favor complete todos los campos obligatorios', 'error');
+                return;
+            }
+            
+            setCrearSesionLoading(true);
+            
+            try {
+                // Generate unique session ID for client link
+                const sessionId = generateSessionId();
+                
+                // Generate correct client link with real domain
+                const clientLink = `${APP_CONFIG.BASE_URL}${APP_CONFIG.CLIENT_PATH}/${sessionId}`;
+                
+                // Create session in Firebase
+                const sessionData = {
+                    sessionId,
+                    asesorId: currentUser.uid,
+                    asesorEmail: currentUser.email,
+                    clienteNombre,
+                    clienteEmail,
+                    clientePassword, // Importante: se guarda para validar login del cliente
+                    clienteTelefono: clienteTelefono || '',
+                    clientLink,
+                    status: 'esperando', // esperando, video_recibido, completada, cancelada
+                    videoStatus: 'pending', // pending, uploaded, approved, rejected
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                const sessionRef = await db.collection('sessions').add(sessionData);
+                currentSession = { id: sessionRef.id, ...sessionData };
+                
+                // Show session container and populate data
+                mostrarSesionActiva(sessionData);
+                
+                // Start monitoring for video upload
+                iniciarMonitoreoVideo();
+                
+                showMessage('Sesión creada exitosamente. Enlace generado para el cliente.', 'success');
+                
+            } catch (error) {
+                console.error('Error creating session:', error);
+                showMessage('Error al crear la sesión', 'error');
+            } finally {
+                setCrearSesionLoading(false);
+            }
+        }
+
+        function mostrarSesionActiva(sessionData) {
+            // Hide form and show session container
+            clienteForm.style.display = 'none';
+            sessionContainer.classList.remove('hidden');
+            
+            // Populate session data
+            sessionClientName.textContent = sessionData.clienteNombre;
+            sessionClientEmail.textContent = sessionData.clienteEmail;
+            sessionClientPhone.textContent = sessionData.clienteTelefono || 'No proporcionado';
+            clientLinkInput.value = sessionData.clientLink;
+            clientNameInstructions.textContent = sessionData.clienteNombre;
+            
+            // Show generated URL for debugging
+            const generatedUrl = document.getElementById('generatedUrl');
+            if (generatedUrl) {
+                generatedUrl.textContent = sessionData.clientLink;
+            }
+            
+            // Show waiting for video state
+            waitingVideo.classList.remove('hidden');
+            videoReceived.classList.add('hidden');
+            completarSesionBtn.classList.add('hidden');
+        }
+
+        function iniciarMonitoreoVideo() {
+            if (videoCheckInterval) {
+                clearInterval(videoCheckInterval);
+            }
+            
+            // Check for video upload every 3 seconds
+            videoCheckInterval = setInterval(async () => {
+                await verificarEstadoVideo();
+            }, 3000);
+        }
+
+        async function verificarEstadoVideo() {
+            if (!currentSession) return;
+            
+            try {
+                const sessionDoc = await db.collection('sessions').doc(currentSession.id).get();
+                if (!sessionDoc.exists) return;
+                
+                const sessionData = sessionDoc.data();
+                
+                if (sessionData.videoStatus === 'uploaded' && sessionData.videoUrl) {
+                    // Video has been uploaded
+                    mostrarVideoRecibido(sessionData);
+                    
+                    // Stop monitoring
+                    if (videoCheckInterval) {
+                        clearInterval(videoCheckInterval);
+                        videoCheckInterval = null;
+                    }
+                    
+                    // Update current session data
+                    currentSession = { id: currentSession.id, ...sessionData };
+                }
+                
+            } catch (error) {
+                console.error('Error checking video status:', error);
+            }
+        }
+
+        function mostrarVideoRecibido(sessionData) {
+            waitingVideo.classList.add('hidden');
+            videoReceived.classList.remove('hidden');
+            completarSesionBtn.classList.remove('hidden');
+            
+            // Populate video information
+            const uploadDate = sessionData.videoUploadedAt ? 
+                new Date(sessionData.videoUploadedAt.toDate()).toLocaleString() : 
+                'Fecha desconocida';
+            
+            document.getElementById('videoDate').textContent = uploadDate;
+            document.getElementById('videoDuration').textContent = sessionData.videoDuration || 'Desconocida';
+            document.getElementById('videoSize').textContent = sessionData.videoSize || 'Desconocido';
+            document.getElementById('videoQuality').textContent = sessionData.videoQuality || 'HD';
+            
+            showMessage('¡Video recibido! Puede revisarlo y aprobar la sesión.', 'success');
+        }
+
+        function copiarEnlaceCliente() {
+            const linkInput = document.getElementById('clientLinkInput');
+            linkInput.select();
+            document.execCommand('copy');
+            
+            // Try modern API if available
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(linkInput.value);
+            }
+            
+            showMessage('Enlace copiado al portapapeles', 'success');
+        }
+
+        function enviarWhatsApp() {
+            const clienteTelefono = document.getElementById('clienteTelefono').value;
+            const clienteNombre = document.getElementById('clienteNombre').value;
+            const linkUrl = document.getElementById('clientLinkInput').value;
+            
+            const mensaje = encodeURIComponent(
+                `Hola ${clienteNombre}, por favor abra este enlace para grabar su video de verificación facial para el trámite de visa. Es un proceso rápido y seguro: ${linkUrl}`
+            );
+            
+            let whatsappUrl;
+            if (clienteTelefono) {
+                const phone = clienteTelefono.replace(/\D/g, ''); // Remove non-digits
+                whatsappUrl = `https://wa.me/${phone}?text=${mensaje}`;
+            } else {
+                whatsappUrl = `https://wa.me/?text=${mensaje}`;
+            }
+            
+            window.open(whatsappUrl, '_blank');
+        }
+
+        function enviarEmail() {
+            const clienteEmail = document.getElementById('clienteEmail').value;
+            const clienteNombre = document.getElementById('clienteNombre').value;
+            const linkUrl = document.getElementById('clientLinkInput').value;
+            
+            const asunto = encodeURIComponent('Video de Verificación - Trámite de Visa');
+            const cuerpo = encodeURIComponent(
+                `Estimado/a ${clienteNombre},\n\n` +
+                `Por favor abra el siguiente enlace para grabar su video de verificación facial para el trámite de visa:\n\n` +
+                `${linkUrl}\n\n` +
+                `El proceso es rápido y seguro. Si tiene alguna duda, no dude en contactarnos.\n\n` +
+                `Saludos cordiales`
+            );
+            
+            const mailtoUrl = `mailto:${clienteEmail}?subject=${asunto}&body=${cuerpo}`;
+            window.open(mailtoUrl);
+        }
+
+        function reproducirVideo() {
+            if (!currentSession || !currentSession.videoUrl) {
+                showMessage('Video no disponible', 'error');
+                return;
+            }
+            
+            videoPlayer.src = currentSession.videoUrl;
+            videoModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        }
+
+        function cerrarVideoModal() {
+            videoModal.classList.add('hidden');
+            videoPlayer.pause();
+            videoPlayer.src = '';
+            document.body.style.overflow = ''; // Restore scrolling
+        }
+
+        async function descargarVideo() {
+            if (!currentSession || !currentSession.videoUrl) {
+                showMessage('Video no disponible para descarga', 'error');
+                return;
+            }
+            
+            try {
+                const link = document.createElement('a');
+                link.href = currentSession.videoUrl;
+                link.download = `video_${currentSession.clienteNombre}_${Date.now()}.webm`;
+                link.click();
+                
+                showMessage('Descarga iniciada', 'success');
+                
+            } catch (error) {
+                console.error('Error downloading video:', error);
+                showMessage('Error al descargar video', 'error');
+            }
+        }
+
+        async function aprobarVideo() {
+            if (!currentSession) return;
+            
+            try {
+                await db.collection('sessions').doc(currentSession.id).update({
+                    videoStatus: 'approved',
+                    videoApprovedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                showMessage('Video aprobado correctamente', 'success');
+                
+            } catch (error) {
+                console.error('Error approving video:', error);
+                showMessage('Error al aprobar video', 'error');
+            }
+        }
+
+        async function rechazarVideo() {
+            const razon = prompt('¿Cuál es la razón del rechazo?');
+            if (!razon) return;
+            
+            if (!currentSession) return;
+            
+            try {
+                await db.collection('sessions').doc(currentSession.id).update({
+                    videoStatus: 'rejected',
+                    rejectionReason: razon,
+                    videoRejectedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Reset to waiting state
+                waitingVideo.classList.remove('hidden');
+                videoReceived.classList.add('hidden');
+                completarSesionBtn.classList.add('hidden');
+                
+                // Restart monitoring
+                iniciarMonitoreoVideo();
+                
+                showMessage('Video rechazado. El cliente deberá grabar un nuevo video.', 'warning');
+                
+            } catch (error) {
+                console.error('Error rejecting video:', error);
+                showMessage('Error al rechazar video', 'error');
+            }
+        }
+
+        async function completarSesion() {
+            if (!currentSession) return;
+            
+            const confirmacion = confirm('¿Está seguro de que desea completar esta sesión?');
+            if (!confirmacion) return;
+            
+            try {
+                await db.collection('sessions').doc(currentSession.id).update({
+                    status: 'completada',
+                    completedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    completedBy: currentUser.uid,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                showMessage('Sesión completada exitosamente', 'success');
+                
+                // Reset form for new session
+                resetFormulario();
+                
+            } catch (error) {
+                console.error('Error completing session:', error);
+                showMessage('Error al completar sesión', 'error');
+            }
+        }
+
+        async function cancelarSesion() {
+            if (!currentSession) {
+                resetFormulario();
+                return;
+            }
+            
+            const confirmacion = confirm('¿Está seguro de que desea cancelar esta sesión?');
+            if (!confirmacion) return;
+            
+            try {
+                await db.collection('sessions').doc(currentSession.id).update({
+                    status: 'cancelada',
+                    canceledAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    canceledBy: currentUser.uid,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                showMessage('Sesión cancelada', 'warning');
+                
+                // Reset form
+                resetFormulario();
+                
+            } catch (error) {
+                console.error('Error canceling session:', error);
+                showMessage('Error al cancelar sesión', 'error');
+            }
+        }
+
+        function resetFormulario() {
+            // Clear form inputs
+            document.getElementById('clienteNombre').value = '';
+            document.getElementById('clienteEmail').value = '';
+            document.getElementById('clientePassword').value = '';
+            document.getElementById('clienteTelefono').value = '';
+            
+            // Show form and hide session container
+            clienteForm.style.display = 'block';
+            sessionContainer.classList.add('hidden');
+            
+            // Clear intervals
+            if (videoCheckInterval) {
+                clearInterval(videoCheckInterval);
+                videoCheckInterval = null;
+            }
+            
+            // Reset current session
+            currentSession = null;
+            
+            // Close video modal if open
+            cerrarVideoModal();
+        }
+
+        async function cargarHistorialSesiones() {
+            try {
+                const sessionsQuery = await db.collection('sessions')
+                    .where('asesorId', '==', currentUser.uid)
+                    .orderBy('createdAt', 'desc')
+                    .limit(50)
+                    .get();
+                
+                const sessionsList = document.getElementById('sessionsList');
+                sessionsList.innerHTML = '';
+                
+                if (sessionsQuery.empty) {
+                    sessionsList.innerHTML = `
+                        <div class="p-6 text-center text-gray-500">
+                            No hay sesiones registradas
+                        </div>
+                    `;
+                    return;
+                }
+                
+                sessionsQuery.forEach(doc => {
+                    const session = { id: doc.id, ...doc.data() };
+                    const sessionElement = crearElementoSesion(session);
+                    sessionsList.appendChild(sessionElement);
+                });
+                
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+                showMessage('Error al cargar sesiones', 'error');
+            }
+        }
+
+        function crearElementoSesion(session) {
+            const div = document.createElement('div');
+            div.className = 'p-6';
+            
+            const statusColors = {
+                'esperando': { bg: 'bg-yellow-100', text: 'text-yellow-800', dot: 'bg-yellow-500' },
+                'video_recibido': { bg: 'bg-blue-100', text: 'text-blue-800', dot: 'bg-blue-500' },
+                'completada': { bg: 'bg-green-100', text: 'text-green-800', dot: 'bg-green-500' },
+                'cancelada': { bg: 'bg-red-100', text: 'text-red-800', dot: 'bg-red-500' }
+            };
+            
+            const statusStyle = statusColors[session.status] || statusColors['esperando'];
+            const createdAt = session.createdAt ? new Date(session.createdAt.toDate()).toLocaleString() : 'Fecha desconocida';
+            
+            div.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <h3 class="text-lg font-semibold text-gray-900">${session.clienteNombre}</h3>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyle.bg} ${statusStyle.text}">
+                                <div class="w-2 h-2 ${statusStyle.dot} rounded-full mr-1"></div>
+                                ${getStatusText(session.status)}
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-2">
+                            <div><strong>Email:</strong> ${session.clienteEmail}</div>
+                            <div><strong>Teléfono:</strong> ${session.clienteTelefono || 'No proporcionado'}</div>
+                            <div><strong>Tipo de Visa:</strong> ${session.tipoVisa}</div>
+                            <div><strong>Fecha:</strong> ${createdAt}</div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col space-y-2 ml-4">
+                        ${session.status === 'esperando' || session.status === 'video_recibido' ? 
+                            `<button onclick="continuarSesion('${session.id}')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+                                Continuar
+                            </button>` : ''
+                        }
+                        ${session.clientLink ? 
+                            `<button onclick="copiarEnlaceSession('${session.clientLink}')" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
+                                Copiar Link
+                            </button>` : ''
+                        }
+                        ${session.videoUrl ? 
+                            `<button onclick="verVideoSession('${session.videoUrl}')" class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700">
+                                Ver Video
+                            </button>` : ''
+                        }
+                    </div>
+                </div>
+            `;
+            
+            return div;
+        }
+
+        function getStatusText(status) {
+            const statusTexts = {
+                'esperando': 'Esperando video',
+                'video_recibido': 'Video recibido',
+                'completada': 'Completada',
+                'cancelada': 'Cancelada'
+            };
+            return statusTexts[status] || status;
+        }
+
+        function filtrarSesiones() {
+            const filterValue = document.getElementById('filterStatus').value;
+            const sessions = document.querySelectorAll('#sessionsList > div');
+            
+            sessions.forEach(session => {
+                if (!filterValue) {
+                    session.style.display = 'block';
+                } else {
+                    const statusElement = session.querySelector('.inline-flex');
+                    const statusText = statusElement ? statusElement.textContent.trim() : '';
+                    const shouldShow = statusText.toLowerCase().includes(filterValue);
+                    session.style.display = shouldShow ? 'block' : 'none';
+                }
+            });
+        }
+
+        // Global functions for session management
+        window.continuarSesion = async function(sessionId) {
+            try {
+                const sessionDoc = await db.collection('sessions').doc(sessionId).get();
+                if (!sessionDoc.exists) {
+                    showMessage('Sesión no encontrada', 'error');
+                    return;
+                }
+                
+                const sessionData = { id: sessionDoc.id, ...sessionDoc.data() };
+                currentSession = sessionData;
+                
+                // Fill form with session data
+                document.getElementById('clienteNombre').value = sessionData.clienteNombre;
+                document.getElementById('clienteEmail').value = sessionData.clienteEmail;
+                document.getElementById('clientePassword').value = sessionData.clientePassword || '';
+                document.getElementById('clienteTelefono').value = sessionData.clienteTelefono || '';
+                
+                // Show session
+                mostrarSesionActiva(sessionData);
+                
+                // Check if video is already uploaded
+                if (sessionData.videoStatus === 'uploaded' && sessionData.videoUrl) {
+                    mostrarVideoRecibido(sessionData);
+                } else {
+                    iniciarMonitoreoVideo();
+                }
+                
+                // Switch to nueva sesion tab
+                switchTab('nueva');
+                
+                showMessage(`Sesión continuada: ${sessionData.clienteNombre}`, 'info');
+                
+            } catch (error) {
+                console.error('Error continuing session:', error);
+                showMessage('Error al continuar sesión', 'error');
+            }
+        };
+
+        window.copiarEnlaceSession = function(link) {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(link).then(() => {
+                    showMessage('Enlace copiado al portapapeles', 'success');
+                });
+            } else {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = link;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showMessage('Enlace copiado al portapapeles', 'success');
+            }
+        };
+
+        window.verVideoSession = function(videoUrl) {
+            videoPlayer.src = videoUrl;
+            videoModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        };
+
+        // Utility functions
+        function generateSessionId() {
+            return 'session_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+        }
+
+        function setLoginLoading(loading) {
+            if (loading) {
+                loginBtnText.style.display = 'none';
+                loginBtnSpinner.classList.remove('hidden');
+                loginBtn.disabled = true;
+            } else {
+                loginBtnText.style.display = 'inline';
+                loginBtnSpinner.classList.add('hidden');
+                loginBtn.disabled = false;
+            }
+        }
+
+        function setCrearSesionLoading(loading) {
+            if (loading) {
+                crearSesionText.style.display = 'none';
+                crearSesionSpinner.classList.remove('hidden');
+                crearSesionBtn.disabled = true;
+            } else {
+                crearSesionText.style.display = 'inline';
+                crearSesionSpinner.classList.add('hidden');
+                crearSesionBtn.disabled = false;
+            }
+        }
+
+        function showError(message) {
+            loginError.textContent = message;
+            loginError.classList.remove('hidden');
+            setTimeout(() => {
+                loginError.classList.add('hidden');
+            }, 5000);
+        }
+
+        function hideError() {
+            loginError.classList.add('hidden');
+        }
+
+        function showMessage(message, type = 'info') {
+            const messageContainer = document.getElementById('messageContainer');
+            const messageDiv = document.createElement('div');
+            
+            const colors = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                warning: 'bg-yellow-500',
+                info: 'bg-blue-500'
+            };
+            
+            messageDiv.className = `${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full`;
+            messageDiv.textContent = message;
+            
+            messageContainer.appendChild(messageDiv);
+            
+            // Animate in
+            setTimeout(() => {
+                messageDiv.classList.remove('translate-x-full');
+            }, 100);
+            
+            // Remove after 4 seconds
+            setTimeout(() => {
+                messageDiv.classList.add('translate-x-full');
+                setTimeout(() => {
+                    messageDiv.remove();
+                }, 300);
+            }, 4000);
+        }
+
+        function getErrorMessage(errorCode) {
+            const errorMessages = {
+                'auth/user-not-found': 'Usuario no encontrado',
+                'auth/wrong-password': 'Contraseña incorrecta',
+                'auth/invalid-email': 'Email inválido',
+                'auth/user-disabled': 'Usuario deshabilitado',
+                'auth/too-many-requests': 'Demasiados intentos. Intente más tarde',
+                'auth/network-request-failed': 'Error de conexión'
+            };
+            
+            return errorMessages[errorCode] || 'Error de autenticación';
+        }
+
+        // PWA Install prompt
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Show install button
+            const installBtn = document.createElement('button');
+            installBtn.textContent = '📱 Instalar App';
+            installBtn.className = 'fixed bottom-4 left-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-700 z-40 text-sm';
+            installBtn.onclick = async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const result = await deferredPrompt.userChoice;
+                    if (result.outcome === 'accepted') {
+                        installBtn.remove();
+                    }
+                    deferredPrompt = null;
+                }
+            };
+            
+            document.body.appendChild(installBtn);
+            
+            // Auto-remove after 15 seconds
+            setTimeout(() => {
+                if (installBtn.parentNode) {
+                    installBtn.remove();
+                }
+            }, 15000);
+        });
+    </script>
+</body>
+</html>

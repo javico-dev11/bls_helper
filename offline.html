@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sin Conexión - PWA Visa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .animate-pulse-slow {
+            animation: pulse 3s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+        <div class="mb-6">
+            <div class="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-4 flex items-center justify-center animate-pulse-slow">
+                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900 mb-2">Sin Conexión</h1>
+            <p class="text-gray-600 mb-6">
+                No se puede conectar a internet. La aplicación funciona en modo offline con funcionalidad limitada.
+            </p>
+        </div>
+        
+        <div class="space-y-4">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+                <h3 class="font-semibold text-blue-900 mb-2">📱 Funciones Disponibles Offline:</h3>
+                <ul class="text-left text-blue-800 space-y-1">
+                    <li>• Ver sesiones guardadas</li>
+                    <li>• Revisar videos descargados</li>
+                    <li>• Preparar nuevas sesiones</li>
+                </ul>
+            </div>
+            
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm">
+                <h3 class="font-semibold text-yellow-900 mb-2">⚠️ Requiere Conexión:</h3>
+                <ul class="text-left text-yellow-800 space-y-1">
+                    <li>• Crear nuevas sesiones</li>
+                    <li>• Recibir videos de clientes</li>
+                    <li>• Sincronizar datos</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="mt-6 space-y-3">
+            <button onclick="checkConnection()" 
+                    class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                🔄 Verificar Conexión
+            </button>
+            
+            <button onclick="goBack()" 
+                    class="w-full bg-gray-200 text-gray-800 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors">
+                ← Volver a la App
+            </button>
+        </div>
+        
+        <div class="mt-6 text-xs text-gray-500">
+            <p>PWA Visa - Modo Offline</p>
+            <p id="lastUpdate"></p>
+        </div>
+    </div>
+
+    <script>
+        // Mostrar última actualización
+        document.getElementById('lastUpdate').textContent = 
+            'Última sincronización: ' + new Date().toLocaleString();
+
+        function checkConnection() {
+            const button = event.target;
+            const originalText = button.textContent;
+            
+            button.textContent = '🔄 Verificando...';
+            button.disabled = true;
+            
+            // Intentar hacer request a una imagen pequeña
+            fetch('/favicon.ico', { 
+                method: 'HEAD',
+                cache: 'no-cache'
+            })
+            .then(() => {
+                // Hay conexión, recargar página
+                showMessage('✅ Conexión restaurada', 'success');
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1000);
+            })
+            .catch(() => {
+                // Sigue sin conexión
+                showMessage('❌ Aún sin conexión', 'error');
+                button.textContent = originalText;
+                button.disabled = false;
+            });
+        }
+
+        function goBack() {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = '/';
+            }
+        }
+
+        function showMessage(message, type) {
+            const messageDiv = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+            
+            messageDiv.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300`;
+            messageDiv.textContent = message;
+            
+            document.body.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 3000);
+        }
+
+        // Auto-verificar conexión cada 30 segundos
+        setInterval(() => {
+            if (navigator.onLine) {
+                fetch('/favicon.ico', { 
+                    method: 'HEAD',
+                    cache: 'no-cache'
+                })
+                .then(() => {
+                    // Conexión restaurada
+                    showMessage('🔄 Conexión restaurada, redirigiendo...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1500);
+                })
+                .catch(() => {
+                    // Aún sin conexión real
+                });
+            }
+        }, 30000);
+    </script>
+</body>
+</html>

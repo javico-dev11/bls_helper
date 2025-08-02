@@ -189,7 +189,7 @@
                 </div>
                 
                 <div class="bg-gray-50 rounded-lg p-4 mb-4">
-                    <div class="space-y-2 sm:grid sm:grid-cols-2 sm:gap-4 sm:space-y-0 text-sm">
+                    <div class="space-y-2 text-sm">
                         <div>
                             <span class="text-gray-600">Cliente:</span>
                             <span class="font-medium ml-2" id="sessionClientName"></span>
@@ -201,10 +201,6 @@
                         <div>
                             <span class="text-gray-600">Teléfono:</span>
                             <span class="font-medium ml-2" id="sessionClientPhone"></span>
-                        </div>
-                        <div>
-                            <span class="text-gray-600">Email:</span>
-                            <span class="font-medium ml-2" id="sessionClientEmail"></span>
                         </div>
                     </div>
                 </div>
@@ -253,7 +249,7 @@
                             </div>
                             
                             <div class="bg-white rounded-lg p-3 mb-3 text-sm">
-                                <div class="grid grid-cols-2 gap-3">
+                                <div class="space-y-2 sm:grid sm:grid-cols-2 sm:gap-3 sm:space-y-0">
                                     <div>
                                         <span class="text-gray-600">Fecha:</span>
                                         <span class="font-medium ml-2" id="videoDate"></span>
@@ -273,17 +269,17 @@
                                 </div>
                             </div>
                             
-                            <div class="flex space-x-2">
-                                <button id="playVideoBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
-                                    ▶️ Reproducir Video
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                <button id="playVideoBtn" class="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-700">
+                                    ▶️ Reproducir
                                 </button>
-                                <button id="downloadVideoBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700">
+                                <button id="downloadVideoBtn" class="bg-purple-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-purple-700">
                                     📥 Descargar
                                 </button>
-                                <button id="approveVideoBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
-                                    ✅ Aprobar Video
+                                <button id="approveVideoBtn" class="bg-green-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-green-700">
+                                    ✅ Aprobar
                                 </button>
-                                <button id="rejectVideoBtn" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700">
+                                <button id="rejectVideoBtn" class="bg-red-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-red-700">
                                     ❌ Rechazar
                                 </button>
                             </div>
@@ -343,7 +339,7 @@
                 </button>
             </div>
             <div class="p-4">
-                <video id="videoPlayer" controls class="w-full max-h-96">
+                <video id="videoPlayer" controls loop class="w-full max-h-96">
                     Tu navegador no soporta video HTML5.
                 </video>
                 <div class="mt-4 text-center text-sm text-gray-600">
@@ -473,7 +469,7 @@
 
         function checkAppConfiguration() {
             // Check if BASE_URL is properly configured
-            if (APP_CONFIG.BASE_URL === 'https://mi-app-visa.com') {
+            if (APP_CONFIG.BASE_URL === 'https://javico-dev11.github.io/') {
                 console.warn('⚠️ ADVERTENCIA: Debes configurar APP_CONFIG.BASE_URL con tu dominio real');
                 
                 // For development, use current origin if localhost

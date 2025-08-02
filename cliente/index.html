@@ -49,6 +49,19 @@
             50% { transform: scale(1.05); }
             100% { transform: scale(1); }
         }
+
+        @media (max-width: 640px) {
+            .p-6 { padding: 1rem; }
+            .p-8 { padding: 1.5rem; }
+            .px-6 { padding-left: 1rem; padding-right: 1rem; }
+            .py-6 { padding-top: 1rem; padding-bottom: 1rem; }
+            .space-x-4 > * + * { margin-left: 0.75rem; }
+            .max-w-md { max-width: calc(100vw - 2rem); }
+        }
+
+        .password-container {
+            position: relative;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -102,9 +115,12 @@
                 
                 <div>
                     <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
-                    <input type="password" id="password" required 
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                           placeholder="••••••••">
+                    <div class="password-container relative">
+                        <input type="password" id="password" required 
+                            class="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            placeholder="••••••••">
+                        <span class="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-700" onclick="togglePassword('password')">👁️</span>
+                    </div>
                 </div>
                 
                 <button type="submit" id="loginBtn" 
@@ -159,6 +175,14 @@
                         <span>Diga claramente su nombre completo</span>
                     </div>
                     <div class="flex items-start space-x-2">
+                        <span class="text-blue-600 font-bold">3.</span>
+                        <span>Mueva lentamente su rostro a la izquierda y derecha</span>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span class="text-blue-600 font-bold">3.</span>
+                        <span>No olvide parpadear durante la grabación</span>
+                    </div>
+                    <div class="flex items-start space-x-2">
                         <span class="text-blue-600 font-bold">4.</span>
                         <span>La grabación debe durar entre 10-30 segundos</span>
                     </div>
@@ -196,7 +220,7 @@
                             00:00
                         </div>
                         
-                        <div class="flex justify-center space-x-4">
+                        <div class="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
                             <button id="startCameraBtn" 
                                     class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
                                 📹 Iniciar Cámara
@@ -227,7 +251,7 @@
                     </video>
                 </div>
                 
-                <div class="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-6">
+                <div class="space-y-2 sm:grid sm:grid-cols-2 sm:gap-4 sm:space-y-0 text-sm text-gray-600 mb-6">
                     <div>
                         <span class="font-medium">Duración:</span>
                         <span id="videoDuration">--</span>
@@ -238,7 +262,7 @@
                     </div>
                 </div>
                 
-                <div class="flex justify-center space-x-4">
+                <div class="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
                     <button id="retryBtn" 
                             class="bg-yellow-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-yellow-700 transition-colors">
                         🔄 Grabar Nuevo
@@ -347,10 +371,9 @@
             </button>
         </div>
     </div>
-    <script>
-        // PWA Cliente - Script Principal
-        
 
+    <script>
+        
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
@@ -366,30 +389,30 @@
         let recordedBlob = null;
 
         // DOM Elements
-        const loadingScreen = document.getElementById('loadingScreen');
-        const errorScreen = document.getElementById('errorScreen');
-        const loginScreen = document.getElementById('loginScreen');
-        const mainApp = document.getElementById('mainApp');
-        const errorMessage = document.getElementById('errorMessage');
+        const loadingScreen =   document.getElementById('loadingScreen');
+        const errorScreen =     document.getElementById('errorScreen');
+        const loginScreen =     document.getElementById('loginScreen');
+        const mainApp =         document.getElementById('mainApp');
+        const errorMessage =    document.getElementById('errorMessage');
 
         // Login elements
-        const loginForm = document.getElementById('loginForm');
-        const loginBtn = document.getElementById('loginBtn');
-        const loginBtnText = document.getElementById('loginBtnText');
+        const loginForm =       document.getElementById('loginForm');
+        const loginBtn =        document.getElementById('loginBtn');
+        const loginBtnText =    document.getElementById('loginBtnText');
         const loginBtnSpinner = document.getElementById('loginBtnSpinner');
-        const loginError = document.getElementById('loginError');
-        const sessionFor = document.getElementById('sessionFor');
-        const userName = document.getElementById('userName');
+        const loginError =      document.getElementById('loginError');
+        const sessionFor =      document.getElementById('sessionFor');
+        const userName =        document.getElementById('userName');
 
         // Camera elements
-        const videoPreview = document.getElementById('videoPreview');
-        const cameraPlaceholder = document.getElementById('cameraPlaceholder');
-        const startCameraBtn = document.getElementById('startCameraBtn');
-        const startRecordBtn = document.getElementById('startRecordBtn');
-        const stopRecordBtn = document.getElementById('stopRecordBtn');
-        const recordingStatus = document.getElementById('recordingStatus');
-        const recordingTimer = document.getElementById('recordingTimer');
-        const recordBtnText = document.getElementById('recordBtnText');
+        const videoPreview =        document.getElementById('videoPreview');
+        const cameraPlaceholder =   document.getElementById('cameraPlaceholder');
+        const startCameraBtn =      document.getElementById('startCameraBtn');
+        const startRecordBtn =      document.getElementById('startRecordBtn');
+        const stopRecordBtn =       document.getElementById('stopRecordBtn');
+        const recordingStatus =     document.getElementById('recordingStatus');
+        const recordingTimer =      document.getElementById('recordingTimer');
+        const recordBtnText =       document.getElementById('recordBtnText');
 
         // Review elements
         const reviewSection = document.getElementById('reviewSection');
@@ -1061,6 +1084,19 @@
                 }
             }, 500);
         });
+
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const toggle = input.nextElementSibling;
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                toggle.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                toggle.textContent = '👁️';
+            }
+        }
 
         console.log('📱 PWA Cliente cargada correctamente');
     </script>

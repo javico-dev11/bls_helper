@@ -135,7 +135,7 @@
             <div id="clienteForm" class="bg-white rounded-lg shadow-sm p-6 mb-4">
                 <h2 class="text-lg font-semibold text-gray-900 mb-4">Información del Cliente</h2>
                 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Cliente</label>
                         <input type="text" id="clienteNombre" required 
@@ -163,8 +163,11 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono del Cliente</label>
                         <input type="tel" id="clienteTelefono" 
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                               placeholder="+593 99 999 9999">
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="99 999 9999"
+                            maxlength="10"
+                            pattern="[0-9]{10}">
+                        <div class="text-xs text-gray-500 mt-1">Solo números, 10 dígitos (ej: 0987654321)</div>
                     </div>
                 </div>
                 
@@ -186,7 +189,7 @@
                 </div>
                 
                 <div class="bg-gray-50 rounded-lg p-4 mb-4">
-                    <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div class="space-y-2 sm:grid sm:grid-cols-2 sm:gap-4 sm:space-y-0 text-sm">
                         <div>
                             <span class="text-gray-600">Cliente:</span>
                             <span class="font-medium ml-2" id="sessionClientName"></span>
@@ -518,6 +521,36 @@
                     cerrarVideoModal();
                 }
             });
+
+            document.getElementById('clienteTelefono').addEventListener('input', formatearTelefono);
+        }
+
+        function formatearTelefono(e) {
+            // Solo permitir números
+            let value = e.target.value.replace(/\D/g, '');
+            
+            // Limitar a 10 dígitos
+            if (value.length > 10) {
+                value = value.slice(0, 10);
+            }
+            
+            e.target.value = value;
+        }
+
+        function obtenerTelefonoCompleto() {
+            const telefono = document.getElementById('clienteTelefono').value;
+            
+            if (!telefono) return '';
+            
+            // Si ya tiene código internacional, devolverlo
+            if (telefono.startsWith('+593') || telefono.startsWith('593')) {
+                return telefono.startsWith('+') ? telefono : '+' + telefono;
+            }
+            
+            // Si empieza con 0, quitarlo y agregar +593
+            const numeroLimpio = telefono.startsWith('0') ? telefono.slice(1) : telefono;
+            
+            return `+593${numeroLimpio}`;
         }
 
         async function handleLogin(e) {
@@ -788,17 +821,20 @@
         }
 
         function enviarWhatsApp() {
-            const clienteTelefono = document.getElementById('clienteTelefono').value;
             const clienteNombre = document.getElementById('clienteNombre').value;
             const linkUrl = document.getElementById('clientLinkInput').value;
+            
+            // Usar la nueva función para obtener teléfono completo
+            const telefonoCompleto = obtenerTelefonoCompleto();
             
             const mensaje = encodeURIComponent(
                 `Hola ${clienteNombre}, por favor abra este enlace para grabar su video de verificación facial para el trámite de visa. Es un proceso rápido y seguro: ${linkUrl}`
             );
             
             let whatsappUrl;
-            if (clienteTelefono) {
-                const phone = clienteTelefono.replace(/\D/g, ''); // Remove non-digits
+            if (telefonoCompleto) {
+                // Limpiar el teléfono (solo números)
+                const phone = telefonoCompleto.replace(/\D/g, '');
                 whatsappUrl = `https://wa.me/${phone}?text=${mensaje}`;
             } else {
                 whatsappUrl = `https://wa.me/?text=${mensaje}`;
@@ -1051,7 +1087,7 @@
                             <div><strong>Fecha:</strong> ${createdAt}</div>
                         </div>
                     </div>
-                    <div class="flex flex-col sm:flex-row sm:space-y-0 sm:space-x-2 space-y-2 ml-4">
+                    <div class="flex flex-col space-y-2 mt-3 sm:flex-row sm:space-y-0 sm:space-x-2 sm:mt-0">
                         ${session.status === 'esperando' || session.status === 'video_recibido' ? 
                             `<button onclick="continuarSesion('${session.id}')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
                                 Continuar

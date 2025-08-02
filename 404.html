@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script>
+        // Redirect /cliente/session_xxx to /cliente/?session=xxx
+        const path = window.location.pathname;
+        if (path.startsWith('/cliente/')) {
+            const sessionId = path.split('/')[2];
+            if (sessionId) {
+                window.location.replace('/cliente/?session=' + sessionId);
+            }
+        } else {
+            window.location.replace('/');
+        }
+    </script>
+</head>
+<body></body>
+</html>

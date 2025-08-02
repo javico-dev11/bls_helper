@@ -428,8 +428,8 @@
                 checkBrowserCompatibility();
                 
                 // Get session ID from URL
-                const pathParts = window.location.pathname.split('/');
-                const sessionId = pathParts[pathParts.length - 1];
+                const urlParams = new URLSearchParams(window.location.search);
+                const sessionId = urlParams.get('session');
                 
                 if (!sessionId || sessionId === 'cliente') {
                     showError('ID de sesión no válido en la URL');

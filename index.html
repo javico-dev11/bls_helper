@@ -33,6 +33,22 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        .password-container {
+            position: relative;
+        }
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #6b7280;
+            user-select: none;
+        }
+        .password-toggle:hover {
+            color: #374151;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -63,9 +79,12 @@
                 
                 <div>
                     <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
-                    <input type="password" id="password" required 
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                           placeholder="••••••••">
+                    <div class="password-container">
+                        <input type="password" id="password" required 
+                            class="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="••••••••">
+                        <span class="password-toggle" onclick="togglePassword('password')">👁️</span>
+                    </div>
                 </div>
                 
                 <button type="submit" id="loginBtn" 
@@ -116,7 +135,7 @@
             <div id="clienteForm" class="bg-white rounded-lg shadow-sm p-6 mb-4">
                 <h2 class="text-lg font-semibold text-gray-900 mb-4">Información del Cliente</h2>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Cliente</label>
                         <input type="text" id="clienteNombre" required 
@@ -133,9 +152,12 @@
                     
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Contraseña del Cliente</label>
-                        <input type="password" id="clientePassword" required 
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                               placeholder="••••••••">
+                        <div class="password-container">
+                            <input type="password" id="clientePassword" required 
+                                class="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                placeholder="••••••••">
+                            <span class="password-toggle" onclick="togglePassword('clientePassword')">👁️</span>
+                        </div>
                     </div>
                     
                     <div>
@@ -1029,7 +1051,7 @@
                             <div><strong>Fecha:</strong> ${createdAt}</div>
                         </div>
                     </div>
-                    <div class="flex flex-col space-y-2 ml-4">
+                    <div class="flex flex-col sm:flex-row sm:space-y-0 sm:space-x-2 space-y-2 ml-4">
                         ${session.status === 'esperando' || session.status === 'video_recibido' ? 
                             `<button onclick="continuarSesion('${session.id}')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
                                 Continuar
@@ -1255,6 +1277,19 @@
                 }
             }, 15000);
         });
+
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const toggle = input.nextElementSibling;
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                toggle.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                toggle.textContent = '👁️';
+            }
+        }
     </script>
 </body>
 </html>

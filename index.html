@@ -212,23 +212,26 @@
                 <!-- Client Link Section -->
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                     <h4 class="font-semibold text-blue-900 mb-3">📱 Enlace para el Cliente</h4>
-                    <div class="flex space-x-2 mb-3">
+                    <div class="space-y-3 mb-3">
                         <input type="text" id="clientLinkInput" readonly 
-                               class="flex-1 px-3 py-2 bg-white border border-blue-300 rounded-lg text-sm">
-                        <button id="copyClientLinkBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
-                            📋 Copiar
-                        </button>
-                        <button id="sendWhatsAppBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
-                            📱 WhatsApp
-                        </button>
-                        <button id="sendEmailBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700">
-                            📧 Email
-                        </button>
+                            class="w-full px-3 py-2 bg-white border border-blue-300 rounded-lg text-sm">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <button id="copyClientLinkBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+                                📋 Copiar
+                            </button>
+                            <button id="sendWhatsAppBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
+                                📱 WhatsApp
+                            </button>
+                            <button id="sendEmailBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700">
+                                📧 Email
+                            </button>
+                        </div>
                     </div>
+                    
                     <div class="text-sm text-blue-700">
                         <p>💡 <strong>Instrucciones para el cliente:</strong></p>
                         <p>"Hola <span id="clientNameInstructions"></span>, por favor abra este enlace para grabar su video de verificación facial para el trámite de visa. Es un proceso rápido y seguro."</p>
-                        <div class="mt-2 p-2 bg-blue-100 rounded text-xs">
+                        <div class="mt-2 p-2 bg-blue-100 rounded text-xs break-all">
                             <strong>URL generada:</strong> <span id="generatedUrl" class="font-mono"></span>
                         </div>
                     </div>
@@ -828,7 +831,7 @@
             const telefonoCompleto = obtenerTelefonoCompleto();
             
             const mensaje = encodeURIComponent(
-                `Hola ${clienteNombre}, por favor abra este enlace para grabar su video de verificación facial para el trámite de visa. Es un proceso rápido y seguro: ${linkUrl}`
+                `Hola Sr(a). ${clienteNombre}, por favor abra este enlace para grabar su video de verificación facial para el trámite de visa. Es un proceso rápido y seguro: ${linkUrl}`
             );
             
             let whatsappUrl;

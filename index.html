@@ -1026,8 +1026,18 @@
 
         async function cargarHistorialSesiones() {
             try {
+                // Obtener fecha de hoy (inicio del día)
+                const hoy = new Date();
+                hoy.setHours(0, 0, 0, 0);
+                
+                // Obtener fecha de mañana (para el rango)
+                const manana = new Date(hoy);
+                manana.setDate(hoy.getDate() + 1);
+                
                 const sessionsQuery = await db.collection('sessions')
                     .where('asesorId', '==', currentUser.uid)
+                    .where('createdAt', '>=', hoy)
+                    .where('createdAt', '<', manana)
                     .orderBy('createdAt', 'desc')
                     .limit(50)
                     .get();
@@ -1038,11 +1048,42 @@
                 if (sessionsQuery.empty) {
                     sessionsList.innerHTML = `
                         <div class="p-6 text-center text-gray-500">
-                            No hay sesiones registradas
+                            <div class="mb-4">
+                                <svg class="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">No hay sesiones hoy</h3>
+                            <p class="text-gray-500">No se han creado sesiones el día de hoy.</p>
+                            <button onclick="switchTab('nueva')" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+                                Crear Nueva Sesión
+                            </button>
                         </div>
                     `;
                     return;
                 }
+                
+                // Agregar header con información del día
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'p-4 bg-blue-50 border-b border-blue-200';
+                headerDiv.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="font-semibold text-blue-900">Sesiones de Hoy</h4>
+                            <p class="text-sm text-blue-700">${hoy.toLocaleDateString('es-ES', { 
+                                weekday: 'long', 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                            })}</p>
+                        </div>
+                        <div class="text-blue-900">
+                            <span class="font-bold text-lg">${sessionsQuery.size}</span>
+                            <span class="text-sm">sesión${sessionsQuery.size !== 1 ? 'es' : ''}</span>
+                        </div>
+                    </div>
+                `;
+                sessionsList.appendChild(headerDiv);
                 
                 sessionsQuery.forEach(doc => {
                     const session = { id: doc.id, ...doc.data() };
@@ -1052,7 +1093,24 @@
                 
             } catch (error) {
                 console.error('Error loading sessions:', error);
-                showMessage('Error al cargar sesiones', 'error');
+                showMessage('Error al cargar sesiones del día', 'error');
+                
+                // Mostrar error en la lista
+                const sessionsList = document.getElementById('sessionsList');
+                sessionsList.innerHTML = `
+                    <div class="p-6 text-center text-red-500">
+                        <div class="mb-4">
+                            <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">Error al cargar sesiones</h3>
+                        <p class="text-gray-500 mb-4">No se pudieron cargar las sesiones del día.</p>
+                        <button onclick="cargarHistorialSesiones()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+                            Reintentar
+                        </button>
+                    </div>
+                `;
             }
         }
 
@@ -1080,10 +1138,9 @@
                                 ${getStatusText(session.status)}
                             </span>
                         </div>
-                        <div class="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-2">
+                        <div class="space-y-1 text-sm text-gray-600 mb-2">
                             <div><strong>Email:</strong> ${session.clienteEmail}</div>
                             <div><strong>Teléfono:</strong> ${session.clienteTelefono || 'No proporcionado'}</div>
-                            <div><strong>Tipo de Visa:</strong> ${session.tipoVisa}</div>
                             <div><strong>Fecha:</strong> ${createdAt}</div>
                         </div>
                     </div>

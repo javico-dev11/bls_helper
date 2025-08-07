@@ -1025,6 +1025,9 @@
         }
 
         async function cargarHistorialSesiones() {
+            console.log('🔍 Iniciando carga de sesiones...');
+            console.log('Usuario actual:', currentUser?.uid);
+            
             try {
                 // Obtener fecha de hoy (inicio del día)
                 const hoy = new Date();
@@ -1034,6 +1037,11 @@
                 const manana = new Date(hoy);
                 manana.setDate(hoy.getDate() + 1);
                 
+                console.log('📅 Rango de fechas:', {
+                    desde: hoy,
+                    hasta: manana
+                });
+                
                 const sessionsQuery = await db.collection('sessions')
                     .where('asesorId', '==', currentUser.uid)
                     .where('createdAt', '>=', hoy)
@@ -1042,10 +1050,40 @@
                     .limit(50)
                     .get();
                 
+                console.log('📊 Resultado consulta:', {
+                    empty: sessionsQuery.empty,
+                    size: sessionsQuery.size
+                });
+                
                 const sessionsList = document.getElementById('sessionsList');
                 sessionsList.innerHTML = '';
                 
                 if (sessionsQuery.empty) {
+                    console.log('❌ No hay sesiones hoy, verificando si hay sesiones de otros días...');
+                    
+                    // Consulta para verificar si hay sesiones de otros días
+                    const allSessionsQuery = await db.collection('sessions')
+                        .where('asesorId', '==', currentUser.uid)
+                        .orderBy('createdAt', 'desc')
+                        .limit(5)
+                        .get();
+                    
+                    console.log('📊 Sesiones totales:', {
+                        empty: allSessionsQuery.empty,
+                        size: allSessionsQuery.size
+                    });
+                    
+                    if (!allSessionsQuery.empty) {
+                        allSessionsQuery.forEach(doc => {
+                            const session = doc.data();
+                            console.log('📄 Sesión encontrada:', {
+                                cliente: session.clienteNombre,
+                                fecha: session.createdAt?.toDate(),
+                                status: session.status
+                            });
+                        });
+                    }
+                    
                     sessionsList.innerHTML = `
                         <div class="p-6 text-center text-gray-500">
                             <div class="mb-4">
@@ -1054,14 +1092,23 @@
                                 </svg>
                             </div>
                             <h3 class="text-lg font-medium text-gray-900 mb-2">No hay sesiones hoy</h3>
-                            <p class="text-gray-500">No se han creado sesiones el día de hoy.</p>
-                            <button onclick="switchTab('nueva')" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
-                                Crear Nueva Sesión
-                            </button>
+                            <p class="text-gray-500 mb-4">No se han creado sesiones el día de hoy (${hoy.toLocaleDateString()}).</p>
+                            <div class="space-y-2">
+                                <button onclick="switchTab('nueva')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+                                    Crear Nueva Sesión
+                                </button>
+                                ${!allSessionsQuery.empty ? 
+                                    `<button onclick="cargarTodasSesiones()" class="bg-gray-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-700">
+                                        Ver Sesiones Anteriores (${allSessionsQuery.size}+)
+                                    </button>` : ''
+                                }
+                            </div>
                         </div>
                     `;
                     return;
                 }
+                
+                console.log('✅ Sesiones encontradas, creando elementos...');
                 
                 // Agregar header con información del día
                 const headerDiv = document.createElement('div');
@@ -1087,12 +1134,15 @@
                 
                 sessionsQuery.forEach(doc => {
                     const session = { id: doc.id, ...doc.data() };
+                    console.log('📝 Procesando sesión:', session.clienteNombre);
                     const sessionElement = crearElementoSesion(session);
                     sessionsList.appendChild(sessionElement);
                 });
                 
+                console.log('✅ Carga completada exitosamente');
+                
             } catch (error) {
-                console.error('Error loading sessions:', error);
+                console.error('❌ Error loading sessions:', error);
                 showMessage('Error al cargar sesiones del día', 'error');
                 
                 // Mostrar error en la lista
@@ -1105,7 +1155,7 @@
                             </svg>
                         </div>
                         <h3 class="text-lg font-medium text-gray-900 mb-2">Error al cargar sesiones</h3>
-                        <p class="text-gray-500 mb-4">No se pudieron cargar las sesiones del día.</p>
+                        <p class="text-gray-500 mb-4">Error: ${error.message}</p>
                         <button onclick="cargarHistorialSesiones()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
                             Reintentar
                         </button>

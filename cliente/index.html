@@ -62,6 +62,94 @@
         .password-container {
             position: relative;
         }
+
+        /* Círculo de liveness */
+        .liveness-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .liveness-circle.active {
+            border-color: #059669;
+            box-shadow: 0 0 20px rgba(5, 150, 105, 0.5);
+            animation: liveness-pulse 2s infinite;
+        }
+
+        .liveness-circle.recording {
+            border-color: #dc2626;
+            box-shadow: 0 0 20px rgba(220, 38, 38, 0.7);
+            animation: recording-pulse 1s infinite;
+        }
+
+        @keyframes liveness-pulse {
+            0% { 
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+            50% { 
+                transform: translate(-50%, -50%) scale(1.1);
+                opacity: 0.8;
+            }
+            100% { 
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes recording-pulse {
+            0% { 
+                transform: translate(-50%, -50%) scale(1);
+                box-shadow: 0 0 20px rgba(220, 38, 38, 0.7);
+            }
+            50% { 
+                transform: translate(-50%, -50%) scale(1.05);
+                box-shadow: 0 0 30px rgba(220, 38, 38, 1);
+            }
+            100% { 
+                transform: translate(-50%, -50%) scale(1);
+                box-shadow: 0 0 20px rgba(220, 38, 38, 0.7);
+            }
+        }
+
+        .face-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 160px;
+            height: 200px;
+            border: 2px dashed rgba(255, 255, 255, 0.6);
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            pointer-events: none;
+            z-index: 11;
+        }
+
+        .face-indicator.aligned {
+            border-color: #059669;
+            border-style: solid;
+        }
+
+        .liveness-instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 12;
+            text-align: center;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -168,6 +256,10 @@
                     </div>
                     <div class="flex items-start space-x-2">
                         <span class="text-blue-600 font-bold">2.</span>
+                        <span>Posicione su rostro dentro del círculo verde</span>
+                    </div>
+                    <div class="flex items-start space-x-2">
+                        <span class="text-blue-600 font-bold">2.</span>
                         <span>Mantenga su rostro centrado en la cámara</span>
                     </div>
                     <div class="flex items-start space-x-2">
@@ -199,6 +291,17 @@
                                muted 
                                playsinline>
                         </video>
+
+                        <!-- Círculo de liveness -->
+                        <div id="livenessCircle" class="liveness-circle hidden"></div>
+                        
+                        <!-- Indicador de posición facial -->
+                        <div id="faceIndicator" class="face-indicator hidden"></div>
+                        
+                        <!-- Instrucciones flotantes -->
+                        <div id="livenessInstructions" class="liveness-instructions hidden">
+                            Mantenga su rostro dentro del círculo
+                        </div>
                         
                         <div id="cameraPlaceholder" class="w-full max-w-md mx-auto bg-gray-200 rounded-lg flex items-center justify-center h-64">
                             <div class="text-center text-gray-500">
@@ -440,6 +543,11 @@
         const grantPermissionsBtn = document.getElementById('grantPermissionsBtn');
         const cancelPermissionsBtn = document.getElementById('cancelPermissionsBtn');
 
+        // Elementos del liveness
+        const livenessCircle = document.getElementById('livenessCircle');
+        const faceIndicator = document.getElementById('faceIndicator');
+        const livenessInstructions = document.getElementById('livenessInstructions');
+
         // Initialize App
         document.addEventListener('DOMContentLoaded', function() {
             initializeApp();
@@ -621,7 +729,18 @@
                 // Show recording controls
                 startCameraBtn.classList.add('hidden');
                 startRecordBtn.classList.remove('hidden');
+
+                // Mostrar elementos de liveness
+                showLivenessOverlay();
                 
+
+                // Cambiar círculo a modo grabación
+                livenessCircle.classList.remove('active');
+                livenessCircle.classList.add('recording');
+                
+                // Actualizar instrucciones
+                updateLivenessInstructions('🔴 GRABANDO - Diga su nombre completo');
+
                 recordingStatus.textContent = 'Cámara iniciada. Presione "Grabar Video" cuando esté listo.';
                 
                 showMessage('Cámara iniciada correctamente', 'success');
@@ -757,6 +876,10 @@
             document.getElementById('recordingTimer').classList.add('hidden');
             
             recordingStatus.textContent = 'Procesando video grabado...';
+
+            // Ocultar overlay de liveness
+            hideLivenessOverlay();
+            stopFaceDetectionSimulation();
         }
 
         function handleRecordingStop() {
@@ -807,6 +930,9 @@
             stopRecordBtn.classList.add('hidden');
             
             recordingStatus.textContent = 'Presione "Grabar Video" para intentar nuevamente.';
+
+            // Mostrar overlay de liveness nuevamente
+            showLivenessOverlay();
             
             // Clear recorded data
             recordedBlob = null;
@@ -942,6 +1068,10 @@
             if (recordedVideo.src) {
                 URL.revokeObjectURL(recordedVideo.src);
             }
+
+            // Limpiar detección facial
+            stopFaceDetectionSimulation();
+            hideLivenessOverlay();
         }
 
         // Utility functions
@@ -1096,6 +1226,57 @@
                 input.type = 'password';
                 toggle.textContent = '👁️';
             }
+        }
+
+        // Funciones de liveness
+        function showLivenessOverlay() {
+            livenessCircle.classList.remove('hidden');
+            faceIndicator.classList.remove('hidden');
+            livenessInstructions.classList.remove('hidden');
+            
+            // Activar círculo
+            setTimeout(() => {
+                livenessCircle.classList.add('active');
+            }, 500);
+            
+            // Simular detección de rostro
+            startFaceDetectionSimulation();
+        }
+
+        function hideLivenessOverlay() {
+            livenessCircle.classList.add('hidden');
+            faceIndicator.classList.add('hidden');
+            livenessInstructions.classList.add('hidden');
+            
+            livenessCircle.classList.remove('active', 'recording');
+            faceIndicator.classList.remove('aligned');
+        }
+
+        function startFaceDetectionSimulation() {
+            let detectionInterval = setInterval(() => {
+                // Simular que el rostro está "alineado" aleatoriamente
+                if (Math.random() > 0.3) {
+                    faceIndicator.classList.add('aligned');
+                    updateLivenessInstructions('Rostro detectado - Listo para grabar');
+                } else {
+                    faceIndicator.classList.remove('aligned');
+                    updateLivenessInstructions('Mantenga su rostro dentro del círculo');
+                }
+            }, 2000);
+            
+            // Guardar intervalo para limpiarlo después
+            window.faceDetectionInterval = detectionInterval;
+        }
+
+        function stopFaceDetectionSimulation() {
+            if (window.faceDetectionInterval) {
+                clearInterval(window.faceDetectionInterval);
+                window.faceDetectionInterval = null;
+            }
+        }
+
+        function updateLivenessInstructions(text) {
+            livenessInstructions.textContent = text;
         }
 
         console.log('📱 PWA Cliente cargada correctamente');

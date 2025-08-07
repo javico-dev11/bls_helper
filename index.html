@@ -49,6 +49,17 @@
         .password-toggle:hover {
             color: #374151;
         }
+
+        #sessionsList {
+            border: 3px solid blue !important;
+            min-height: 200px !important;
+        }
+
+        #sessionsList > div {
+            border: 1px solid red !important;
+            margin: 5px !important;
+            background-color: rgba(255, 255, 0, 0.2) !important;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -1056,6 +1067,10 @@
                 });
                 
                 const sessionsList = document.getElementById('sessionsList');
+                console.log('📋 sessionsList element found:', !!sessionsList);
+                console.log('📋 sessionsList element:', sessionsList);
+                console.log('📋 sessionsList style display:', getComputedStyle(sessionsList).display);
+                console.log('📋 sessionsList style visibility:', getComputedStyle(sessionsList).visibility);
                 sessionsList.innerHTML = '';
                 
                 if (sessionsQuery.empty) {
@@ -1132,11 +1147,19 @@
                 `;
                 sessionsList.appendChild(headerDiv);
                 
+                console.log('📋 Header agregado. sessionsList.children.length:', sessionsList.children.length);
+                console.log('📋 sessionsList actual:', sessionsList);
+
                 sessionsQuery.forEach(doc => {
                     const session = { id: doc.id, ...doc.data() };
-                    console.log('📝 Procesando sesión:', session.clienteNombre);
+                    console.log(`📝 Procesando sesión ${index + 1}:`, session.clienteNombre);
+                    
                     const sessionElement = crearElementoSesion(session);
+                    console.log(`🎨 Elemento creado para ${session.clienteNombre}:`, sessionElement);
+                    
                     sessionsList.appendChild(sessionElement);
+                    console.log(`📋 Después de agregar ${session.clienteNombre}. Total hijos:`, sessionsList.children.length);
+                    console.log(`📋 innerHTML length:`, sessionsList.innerHTML.length);
                 });
                 
                 console.log('✅ Carga completada exitosamente');

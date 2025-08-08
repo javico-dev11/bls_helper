@@ -1156,7 +1156,7 @@
 
                 sessionsQuery.forEach(doc => {
                     const session = { id: doc.id, ...doc.data() };
-                    console.log(`📝 Procesando sesión ${index + 1}:`, session.clienteNombre);
+                    console.log(`📝 Procesando sesión:`, session.clienteNombre);
                     
                     const sessionElement = crearElementoSesion(session);
                     console.log(`🎨 Elemento creado para ${session.clienteNombre}:`, sessionElement);

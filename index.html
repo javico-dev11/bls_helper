@@ -311,7 +311,7 @@
         </div>
 
         <!-- Mis Sesiones Tab -->
-        <div id="misSesionesTab" class="p-4">
+        <div id="misSesionesTab" class="hidden p-4">
             <div class="bg-white rounded-lg shadow-sm">
                 <div class="p-6 border-b border-gray-200">
                     <div class="flex items-center justify-between">
@@ -677,6 +677,10 @@
                 tabMisSesiones.classList.add('border-blue-500', 'text-blue-600');
                 tabMisSesiones.classList.remove('border-transparent', 'text-gray-500');
                 misSesionesTab.style.display = 'block';
+
+                console.log('🔄 Cambiando a tab sesiones');
+                console.log('🔄 misSesionesTab.style.display:', misSesionesTab.style.display);
+                console.log('🔄 misSesionesTab.classList:', misSesionesTab.classList.toString());
                 cargarHistorialSesiones();
             }
         }
